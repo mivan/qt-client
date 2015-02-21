@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -118,6 +118,11 @@ printMulticopyDocument::printMulticopyDocument(QString numCopiesMetric,
 
 printMulticopyDocument::~printMulticopyDocument()
 {
+  if (_data->_captive)
+  {
+    orReport::endMultiPrint(_data->_printer);
+  }
+
   if (_data)
   {
     delete _data;
@@ -324,7 +329,8 @@ void printMulticopyDocument::sPrint()
     message("");
   }
 
-  if (! mpStartedInitialized)
+//  if (! mpStartedInitialized)
+  if (!_data->_captive)
   {
     orReport::endMultiPrint(_data->_printer);
     _data->_mpIsInitialized = false;
@@ -513,7 +519,7 @@ void printMulticopyDocument::setDoctype(QString doctype)
   if (doctype == "AR")
     _data->_doctypefull = tr("A/R Statement");
   else if (doctype == "CM")
-    _data->_doctypefull = tr("Credit Memo");
+    _data->_doctypefull = tr("Return");
   else if (doctype == "IN")
     _data->_doctypefull = tr("Invoice");
   else if (doctype == "L")

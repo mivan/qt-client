@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -259,8 +259,8 @@ void returnAuthorizationWorkbench::sProcess()
     returnProcess.exec();
     if (returnProcess.first())
     {
-      QMessageBox::information( this, tr("New Credit Memo Created"),
-                                tr("<p>A new CreditMemo has been created and "
+      QMessageBox::information( this, tr("New Return Created"),
+                                tr("<p>A new Return has been created and "
 				                   "assigned #%1")
                                    .arg(returnProcess.value("cmhead_number").toString()));
 	  if (_printmemo->isChecked())
@@ -325,7 +325,7 @@ void returnAuthorizationWorkbench::sProcess()
 	      QMessageBox::information(this, tr("Credit Card Processing Note"),
 				   cardproc->errorMsg());
 	  }
-	  // requery regardless 'cause the new credit memo means nothing's "due"
+	  // requery regardless 'cause the new return means nothing's "due"
 	  sFillListDue();
 	}
 	else if (ccq.lastError().type() != QSqlError::NoError)

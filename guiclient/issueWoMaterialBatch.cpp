@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -10,6 +10,7 @@
 
 #include "issueWoMaterialBatch.h"
 
+#include <QSqlError>
 #include <QVariant>
 #include <QMessageBox>
 #include <metasql.h>
@@ -30,18 +31,23 @@ issueWoMaterialBatch::issueWoMaterialBatch(QWidget* parent, const char* name, bo
   _hasPush = FALSE;
   _transDate->setEnabled(_privileges->check("AlterTransactionDates"));
   _transDate->setDate(omfgThis->dbDate(), true);
-  _wo->setType(cWoExploded | cWoIssued | cWoReleased);
+
+// Issue #22778 - Add hidden metric to allow issuing to Exploded WOs
+  if (_metrics->boolean("IssueToExplodedWO"))
+    _wo->setType(cWoExploded | cWoIssued | cWoReleased);
+  else
+    _wo->setType(cWoIssued | cWoReleased);
 
   omfgThis->inputManager()->notify(cBCWorkOrder, this, _wo, SLOT(setId(int)));
 
-  _womatl->addColumn(tr("Item Number"),  _itemColumn, Qt::AlignLeft,   true,  "item_number"   );
-  _womatl->addColumn(tr("Description"),  -1,          Qt::AlignLeft,   true,  "itemdescrip"   );
-  _womatl->addColumn(tr("UOM"),          _uomColumn,  Qt::AlignCenter, true,  "uom_name" );
-  _womatl->addColumn(tr("Issue Method"), _itemColumn, Qt::AlignCenter, true,  "issuemethod" );
-  _womatl->addColumn(tr("Picklist"),     _itemColumn, Qt::AlignCenter, true,  "picklist" );
-  _womatl->addColumn(tr("Required"),     _qtyColumn,  Qt::AlignRight,  true,  "required"  );
-  _womatl->addColumn(tr("QOH"),          _qtyColumn,  Qt::AlignRight,  true,  "itemsite_qtyonhand"  );
-  _womatl->addColumn(tr("Short"),        _qtyColumn,  Qt::AlignRight,  true,  "short"  );
+  _womatl->addColumn(tr("Item Number"),    _itemColumn, Qt::AlignLeft,   true,  "item_number"   );
+  _womatl->addColumn(tr("Description"),    -1,          Qt::AlignLeft,   true,  "itemdescrip"   );
+  _womatl->addColumn(tr("UOM"),            _uomColumn,  Qt::AlignCenter, true,  "uom_name" );
+  _womatl->addColumn(tr("Issue Method"),   _itemColumn, Qt::AlignCenter, true,  "issuemethod" );
+  _womatl->addColumn(tr("Picklist"),       _itemColumn, Qt::AlignCenter, true,  "picklist" );
+  _womatl->addColumn(tr("Required"),       _qtyColumn,  Qt::AlignRight,  true,  "required"  );
+  _womatl->addColumn(tr("Available QOH"),  _qtyColumn,  Qt::AlignRight,  true,  "availableqoh"  );
+  _womatl->addColumn(tr("Short"),          _qtyColumn,  Qt::AlignRight,  true,  "short"  );
 }
 
 issueWoMaterialBatch::~issueWoMaterialBatch()
@@ -168,6 +174,31 @@ void issueWoMaterialBatch::sIssue()
         QMessageBox::information( this, tr("Material Issue"), tr("Transaction Canceled") );
         return;
       }
+
+      if (_metrics->boolean("LotSerialControl"))
+      {
+        // Insert special pre-assign records for the lot/serial#
+        // so they are available when the material is returned
+        XSqlQuery lsdetail;
+        lsdetail.prepare("INSERT INTO lsdetail "
+                         "            (lsdetail_itemsite_id, lsdetail_created, lsdetail_source_type, "
+                         "             lsdetail_source_id, lsdetail_source_number, lsdetail_ls_id, lsdetail_qtytoassign) "
+                         "SELECT invhist_itemsite_id, NOW(), 'IM', "
+                         "       :orderitemid, invhist_ordnumber, invdetail_ls_id, (invdetail_qty * -1.0) "
+                         "FROM invhist JOIN invdetail ON (invdetail_invhist_id=invhist_id) "
+                         "WHERE (invhist_series=:itemlocseries)"
+                         "  AND (COALESCE(invdetail_ls_id, -1) > 0);");
+        lsdetail.bindValue(":orderitemid", items.value("womatl_id").toInt());
+        lsdetail.bindValue(":itemlocseries", issue.value("result").toInt());
+        lsdetail.exec();
+        if (lsdetail.lastError().type() != QSqlError::NoError)
+        {
+          rollback.exec();
+          systemError(this, lsdetail.lastError().databaseText(), __FILE__, __LINE__);
+          return;
+        }
+      }
+      
     }
     else
     {
@@ -177,6 +208,7 @@ void issueWoMaterialBatch::sIssue()
                          .arg(_wo->id()) );
       return;
     }
+
     issue.exec("COMMIT;");
   }
 
@@ -220,14 +252,14 @@ void issueWoMaterialBatch::sFillList()
                     "   ELSE "
                     "     (womatl_qtyiss * -1) "
                     "   END AS required,"
-                    " itemsite_qtyonhand,"
-                    " abs(noneg((itemsite_qtyonhand - womatl_qtyreq) * -1)) AS short,"
+                    " qtyAvailable(itemsite_id) AS availableqoh,"
+                    " abs(noneg((qtyAvailable(itemsite_id) - womatl_qtyreq) * -1)) AS short,"
                     " 'qty' AS required_xtnumericrole,"
-                    " 'qty' AS itemsite_qtyonhand_xtnumericrole,"
+                    " 'qty' AS availableqoh_xtnumericrole,"
                     " 'qty' AS short_xtnumericrole,"
                     " CASE WHEN (womatl_issuemethod = 'L') THEN 'blue'"
                     " END AS issuemethod_qtforegroundrole, "
-                    " CASE WHEN (abs(noneg((itemsite_qtyonhand - womatl_qtyreq) * -1)) > 0.0) THEN 'red'"
+                    " CASE WHEN (abs(noneg((qtyAvailable(itemsite_id) - womatl_qtyreq) * -1)) > 0.0) THEN 'red'"
                     " END AS short_qtforegroundrole "
                     "FROM womatl, itemsite, item, uom "
                     "WHERE ((womatl_itemsite_id=itemsite_id)"

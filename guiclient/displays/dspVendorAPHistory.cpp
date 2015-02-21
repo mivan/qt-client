@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -20,6 +20,7 @@
 #include "voucher.h"
 #include "miscVoucher.h"
 #include "dspGLSeries.h"
+#include "errorReporter.h"
 
 dspVendorAPHistory::dspVendorAPHistory(QWidget* parent, const char*, Qt::WFlags fl)
   : display(parent, "dspVendorAPHistory", fl)
@@ -235,7 +236,8 @@ void dspVendorAPHistory::sVoidVoucher()
       sFillList();
   }
   else
-    systemError( this, dspVoidVoucher.lastError().databaseText(), __FILE__, __LINE__);
+    ErrorReporter::error(QtCriticalMsg, this, tr("Voiding Voucher"),
+                         dspVoidVoucher, __FILE__, __LINE__);
 
 }
 

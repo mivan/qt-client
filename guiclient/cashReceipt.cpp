@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -36,10 +36,10 @@ const struct {
   { QT_TRANSLATE_NOOP("cashReceipt", "Visa"),             "V", true  },
   { QT_TRANSLATE_NOOP("cashReceipt", "American Express"), "A", true  },
   { QT_TRANSLATE_NOOP("cashReceipt", "Discover Card"),    "D", true  },
-  { QT_TRANSLATE_NOOP("cashReceipt", "Other Credit Card"),"R", true  },
+  { QT_TRANSLATE_NOOP("cashReceipt", "Other Credit Card"),"O", true  },
   { QT_TRANSLATE_NOOP("cashReceipt", "Cash"),             "K", false },
   { QT_TRANSLATE_NOOP("cashReceipt", "Wire Transfer"),    "W", false },
-  { QT_TRANSLATE_NOOP("cashReceipt", "Other"),            "O", false }
+  { QT_TRANSLATE_NOOP("cashReceipt", "Other"),            "R", false }
 };
 
 cashReceipt::cashReceipt(QWidget* parent, const char* name, Qt::WFlags fl)
@@ -144,6 +144,14 @@ cashReceipt::cashReceipt(QWidget* parent, const char* name, Qt::WFlags fl)
    _balCustomerDeposit->hide();
   }
 
+  if(_metrics->boolean("AltCashExchangeRate"))
+  {
+    connect(_altExchRate, SIGNAL(toggled(bool)), this, SLOT(sHandleAltExchRate()));
+    connect(_exchRate, SIGNAL(editingFinished()), this, SLOT(sUpdateGainLoss()));
+  }
+  else
+    _altExchRate->hide();
+  
   _overapplied = false;
   _cashrcptid = -1;
   _posted = false;
@@ -657,32 +665,35 @@ bool cashReceipt::save(bool partial)
 
   if (_mode == cNew)
     cashave.prepare( "INSERT INTO cashrcpt "
-               "( cashrcpt_id, cashrcpt_cust_id, cashrcpt_distdate, cashrcpt_amount,"
-               "  cashrcpt_fundstype, cashrcpt_bankaccnt_id, cashrcpt_curr_id, "
-               "  cashrcpt_usecustdeposit, cashrcpt_docnumber, cashrcpt_docdate, "
-               "  cashrcpt_notes, cashrcpt_salescat_id, cashrcpt_number, cashrcpt_applydate, cashrcpt_discount ) "
-               "VALUES "
-               "( :cashrcpt_id, :cashrcpt_cust_id, :cashrcpt_distdate, :cashrcpt_amount,"
-               "  :cashrcpt_fundstype, :cashrcpt_bankaccnt_id, :curr_id, "
-               "  :cashrcpt_usecustdeposit, :cashrcpt_docnumber, :cashrcpt_docdate, "
-               "  :cashrcpt_notes, :cashrcpt_salescat_id, :cashrcpt_number, :cashrcpt_applydate, :cashrcpt_discount );" );
+                    "( cashrcpt_id, cashrcpt_cust_id, cashrcpt_distdate, cashrcpt_amount,"
+                    "  cashrcpt_fundstype, cashrcpt_bankaccnt_id, cashrcpt_curr_id, "
+                    "  cashrcpt_usecustdeposit, cashrcpt_docnumber, cashrcpt_docdate, "
+                    "  cashrcpt_notes, cashrcpt_salescat_id, cashrcpt_number, cashrcpt_applydate, "
+                    "  cashrcpt_discount, cashrcpt_alt_curr_rate ) "
+                    "VALUES "
+                    "( :cashrcpt_id, :cashrcpt_cust_id, :cashrcpt_distdate, :cashrcpt_amount,"
+                    "  :cashrcpt_fundstype, :cashrcpt_bankaccnt_id, :curr_id, "
+                    "  :cashrcpt_usecustdeposit, :cashrcpt_docnumber, :cashrcpt_docdate, "
+                    "  :cashrcpt_notes, :cashrcpt_salescat_id, :cashrcpt_number, :cashrcpt_applydate, "
+                    "  :cashrcpt_discount, ROUND(:cashrcpt_alt_curr_rate, 8) );" );
   else
     cashave.prepare( "UPDATE cashrcpt "
-	       "SET cashrcpt_cust_id=:cashrcpt_cust_id,"
-	       "    cashrcpt_amount=:cashrcpt_amount,"
-	       "    cashrcpt_fundstype=:cashrcpt_fundstype,"
-	       "    cashrcpt_docnumber=:cashrcpt_docnumber,"
-	       "    cashrcpt_docdate=:cashrcpt_docdate,"
-	       "    cashrcpt_bankaccnt_id=:cashrcpt_bankaccnt_id,"
-	       "    cashrcpt_distdate=:cashrcpt_distdate,"
-	       "    cashrcpt_notes=:cashrcpt_notes, "
-	       "    cashrcpt_salescat_id=:cashrcpt_salescat_id, "
-	       "    cashrcpt_curr_id=:curr_id,"
-	       "    cashrcpt_usecustdeposit=:cashrcpt_usecustdeposit,"
-           "    cashrcpt_applydate=:cashrcpt_applydate,"
-           "    cashrcpt_discount=:cashrcpt_discount, "
-           "    cashrcpt_curr_rate=null " // force a curr rate re-evaluation
-           "WHERE (cashrcpt_id=:cashrcpt_id);" );
+                    "SET cashrcpt_cust_id=:cashrcpt_cust_id,"
+                    "    cashrcpt_amount=:cashrcpt_amount,"
+                    "    cashrcpt_fundstype=:cashrcpt_fundstype,"
+                    "    cashrcpt_docnumber=:cashrcpt_docnumber,"
+                    "    cashrcpt_docdate=:cashrcpt_docdate,"
+                    "    cashrcpt_bankaccnt_id=:cashrcpt_bankaccnt_id,"
+                    "    cashrcpt_distdate=:cashrcpt_distdate,"
+                    "    cashrcpt_notes=:cashrcpt_notes, "
+                    "    cashrcpt_salescat_id=:cashrcpt_salescat_id, "
+                    "    cashrcpt_curr_id=:curr_id,"
+                    "    cashrcpt_usecustdeposit=:cashrcpt_usecustdeposit,"
+                    "    cashrcpt_applydate=:cashrcpt_applydate,"
+                    "    cashrcpt_discount=:cashrcpt_discount, "
+                    "    cashrcpt_alt_curr_rate= ROUND(:cashrcpt_alt_curr_rate, 8), "
+                    "    cashrcpt_curr_rate=null " // force a curr rate re-evaluation
+                    "WHERE (cashrcpt_id=:cashrcpt_id);" );
 
   cashave.bindValue(":cashrcpt_id", _cashrcptid);
   cashave.bindValue(":cashrcpt_number", _number->text());
@@ -702,6 +713,13 @@ bool cashReceipt::save(bool partial)
     cashave.bindValue(":cashrcpt_salescat_id", _salescat->id());
   else
     cashave.bindValue(":cashrcpt_salescat_id", -1);
+  if(_altExchRate->isChecked())
+  {
+    if (_metrics->value("CurrencyExchangeSense").toInt() == 1)
+      cashave.bindValue(":cashrcpt_alt_curr_rate", 1.0 / _exchRate->toDouble());
+    else
+      cashave.bindValue(":cashrcpt_alt_curr_rate", _exchRate->toDouble());
+  }
   cashave.exec();
   if (cashave.lastError().type() != QSqlError::NoError)
   {
@@ -895,6 +913,15 @@ void cashReceipt::populate()
       _altAccnt->setChecked(TRUE);
       _salescat->setId(cashpopulate.value("cashrcpt_salescat_id").toInt());
     }
+    if(cashpopulate.value("cashrcpt_alt_curr_rate").toDouble() > 0.0)
+    {
+      _altExchRate->setChecked(TRUE);
+      if (_metrics->value("CurrencyExchangeSense").toInt() == 1)
+        _exchRate->setDouble(1.0 / cashpopulate.value("cashrcpt_alt_curr_rate").toDouble());
+      else
+        _exchRate->setDouble(cashpopulate.value("cashrcpt_alt_curr_rate").toDouble());
+      sUpdateGainLoss();
+    }
     if(cashpopulate.value("cashrcpt_usecustdeposit").toBool())
       _balCustomerDeposit->setChecked(true);
     else
@@ -959,13 +986,23 @@ void cashReceipt::setCreditCard()
     return;
 
   XSqlQuery bankq;
-  bankq.prepare("SELECT ccbank_bankaccnt_id"
+  bankq.prepare("SELECT COALESCE(ccbank_bankaccnt_id, -1) AS ccbank_bankaccnt_id"
                 "  FROM ccbank"
                 " WHERE (ccbank_ccard_type=:cardtype);");
   bankq.bindValue(":cardtype", _fundsType->code());
   bankq.exec();
   if (bankq.first())
-    _bankaccnt->setId(bankq.value("ccbank_bankaccnt_id").toInt());
+    if (bankq.value("ccbank_bankaccnt_id").toInt() > 0)
+      _bankaccnt->setId(bankq.value("ccbank_bankaccnt_id").toInt());
+    else
+    {
+      QMessageBox::warning(this, tr("No Bank Account"),
+                           tr("<p>Cannot find the Bank Account to post this "
+                              "transaction against. Either this card type is not "
+                              "accepted or the Credit Card configuration is not "
+                              "complete."));
+      return;
+    }
   else if (bankq.lastError().type() != QSqlError::NoError)
   {
     systemError(this, bankq.lastError().text(), __FILE__, __LINE__);
@@ -1094,4 +1131,65 @@ void cashReceipt::sDateChanged()
     _applyBalLit->setText(tr("Record Receipt as:"));
   else
     _applyBalLit->setText(tr("Apply Balance As:"));
+}
+
+void cashReceipt::sHandleAltExchRate()
+{
+  if (_altExchRate->isChecked())
+  {
+    QString inverter("");
+    if (_metrics->value("CurrencyExchangeSense").toInt() == 1)
+      inverter = "1 / ";
+    XSqlQuery currRate;
+    QString sql = QString("SELECT %1 currRate(:cashrcpt_curr_id, :cashrcpt_distdate) AS _currrate;")
+                          .arg(inverter);
+    currRate.prepare(sql);
+    currRate.bindValue(":cashrcpt_curr_id", _received->id());
+    currRate.bindValue(":cashrcpt_distdate", _applDate->date());
+    currRate.exec();
+    if (currRate.first())
+    {
+      _exchRate->setDouble(currRate.value("_currrate").toDouble());
+      _gainLoss->setBaseValue(0.0);
+    }
+    else if (currRate.lastError().type() != QSqlError::NoError)
+    {
+      systemError(this, currRate.lastError().databaseText(), __FILE__, __LINE__);
+      return;
+    }
+  }
+  else
+  {
+    _exchRate->clear();
+    _gainLoss->clear();
+  }
+}
+
+void cashReceipt::sUpdateGainLoss()
+{
+  if (_altExchRate->isChecked())
+  {
+    XSqlQuery gainLoss;
+    QString sql = QString("SELECT ROUND((:cashrcpt_amount / ROUND(:cashrcpt_alt_curr_rate, 8)) - "
+                          "             (:cashrcpt_amount / currRate(:cashrcpt_curr_id, :cashrcpt_distdate))"
+                          "             , 2) AS gainloss;");
+    gainLoss.prepare(sql);
+    gainLoss.bindValue(":cashrcpt_curr_id", _received->id());
+    gainLoss.bindValue(":cashrcpt_distdate", _applDate->date());
+    gainLoss.bindValue(":cashrcpt_amount", _received->localValue());
+    if (_metrics->value("CurrencyExchangeSense").toInt() == 1)
+      gainLoss.bindValue(":cashrcpt_alt_curr_rate", 1.0 / _exchRate->toDouble());
+    else
+      gainLoss.bindValue(":cashrcpt_alt_curr_rate", _exchRate->toDouble());
+    gainLoss.exec();
+    if (gainLoss.first())
+    {
+      _gainLoss->setBaseValue(gainLoss.value("gainloss").toDouble());
+    }
+    else if (gainLoss.lastError().type() != QSqlError::NoError)
+    {
+      systemError(this, gainLoss.lastError().databaseText(), __FILE__, __LINE__);
+      return;
+    }
+  }
 }

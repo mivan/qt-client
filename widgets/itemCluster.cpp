@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -871,6 +871,17 @@ void ItemLineEdit::sParse()
         setId(item.value("item_id").toInt());
         return;
       }
+      if (_x_metrics->boolean("AutoItemSearch"))
+      {
+        // nothing found, start search
+        ParameterList params;
+        params.append("search", text().trimmed().toUpper());
+        params.append("searchNumber");
+        params.append("searchUpc");
+        params.append("searchAlias");
+        sSearch(params);
+        return;
+      }
     }
     setId(-1);
   }
@@ -1189,7 +1200,7 @@ itemSearch::itemSearch(QWidget* pParent, Qt::WindowFlags pFlags)
   _listTab->addColumn(tr("Bar Code"),     100,  Qt::AlignLeft,  true, "item_upccode" );
   _listTab->addColumn(tr("Active"),        50,  Qt::AlignLeft,  true, "item_active" );
   _listTab->addColumn(tr("Alias Number"), 100,  Qt::AlignLeft,  true, "itemalias_number" );
-  _listTab->addColumn(tr("CRM Account"),  100,  Qt::AlignLeft,  true, "crmacct_name" );
+  _listTab->addColumn(tr("Account"),      100,  Qt::AlignLeft,  true, "crmacct_name" );
 }
 
 void itemSearch::set(const ParameterList &pParams)
@@ -1244,6 +1255,10 @@ void itemSearch::set(const ParameterList &pParams)
   if (valid)
     _searchUpc->setChecked(true);
 
+  param = pParams.value("searchAlias", &valid);
+  if (valid)
+    _searchAlias->setChecked(true);
+  
   sFillList();
 }
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -32,7 +32,7 @@ class CrmaccountMergePickAccountsPagePrivate
       if (!ok)
         ErrorReporter::error(QtCriticalMsg, _parent,
                              QT_TRANSLATE_NOOP("CrmaccountMergePickAccountsPage",
-                                               "Error Getting CRM Accounts"),
+                                               "Error Getting Accounts"),
                              errmsg, __FILE__, __LINE__);
     }
 
@@ -261,7 +261,7 @@ void CrmaccountMergePickAccountsPage::sFillList()
   MetaSQLQuery mql(_data->_mqlstr);
   XSqlQuery qry = mql.toQuery(_filter->parameters());
   _sources->populate(qry);
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Getting CRM Account"),
+  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Getting Account"),
                            qry, __FILE__, __LINE__))
     return;
 

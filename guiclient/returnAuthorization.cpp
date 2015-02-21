@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -21,6 +21,7 @@
 #include "enterPoitemReceipt.h"
 #include "enterPoReceipt.h"
 #include "errorReporter.h"
+#include "guiErrorCheck.h"
 #include "mqlutil.h"
 #include "returnAuthorizationItem.h"
 #include "storedProcErrorLookup.h"
@@ -395,98 +396,46 @@ bool returnAuthorization::sSave(bool partial)
   QString timing = QString(timingTypes[_timing->currentIndex()]);
   QString creditBy = QString(creditMethods[_creditBy->currentIndex()]);
 
-  if ( !partial && (disposition.isEmpty()) )
-  {
-    QMessageBox::warning( this, tr("Invalid Disposition"),
-                         tr("<p>You must enter a Disposition." ) );
-    _disposition->setFocus();
+  QList<GuiErrorCheck> errors;
+  errors
+  << GuiErrorCheck((!partial && disposition.isEmpty()), _disposition,
+                   tr("<p>You must enter a Disposition."))
+  << GuiErrorCheck((!partial && timing.isEmpty()), _timing,
+                   tr("<p>You must enter a Timing."))
+  << GuiErrorCheck((!partial && creditBy.isEmpty()), _creditBy,
+                   tr("<p>You must enter a Credit Method."))
+  << GuiErrorCheck(_authNumber->text().isEmpty(), _authNumber,
+                   tr("You must enter a valid Authorization Number."))
+  << GuiErrorCheck(!_authDate->isValid(), _authDate,
+                   tr("You must enter a valid Authorization Date."))
+  << GuiErrorCheck((!partial && (disposition == "C") && (creditBy == "N")), _creditBy,
+                   tr("<p>You may not enter a Disposition of Credit "
+                      "and a Credit By of None."))
+  << GuiErrorCheck((! _miscCharge->isZero() && (!_miscChargeAccount->isValid())), _miscChargeAccount,
+                   tr("<p>You may not enter a Misc. Charge without "
+                      "indicating the G/L Sales Account number for the "
+                      "charge. Please set the Misc. Charge amount to 0 "
+                      "or select a Misc. Charge Sales Account."))
+  << GuiErrorCheck((!partial && _raitem->topLevelItemCount() == 0), _new,
+                   tr("<p>You must create at least one Line Item for "
+                      "this Return Authorization before you may save it."))
+  << GuiErrorCheck(_total->localValue() < 0, _cust,
+                   tr("<p>The Total must be a positive value."))
+  << GuiErrorCheck((!partial && !_warehouse->isValid()), _warehouse,
+                   tr("<p>You must enter a valid Receiving Site."))
+  << GuiErrorCheck((!partial && !_shipWhs->isValid()), _shipWhs,
+                   tr("<p>You must enter a valid Shipping Site."))
+  ;
+  
+  if (GuiErrorCheck::reportErrors(this, tr("Cannot Save Return Authorization"), errors))
     return false;
-  }
-
-  if ( !partial && (timing.isEmpty()) )
-  {
-    QMessageBox::warning( this, tr("Invalid Timing"),
-                         tr("<p>You must enter a Timing." ) );
-    _timing->setFocus();
-    return false;
-  }
-
-  if ( !partial && (creditBy.isEmpty()) )
-  {
-    QMessageBox::warning( this, tr("Invalid Credit Method"),
-                         tr("<p>You must enter a Credit Method." ) );
-    _creditBy->setFocus();
-    return false;
-  }
-
-  if (_authNumber->text().isEmpty())
-  {
-    if(partial && !isVisible())
-      return false;
-    QMessageBox::critical( this, tr("Cannot Save Return Authorization"),
-      tr("You may not save this Return Authorization until you have entered a valid Authorization Number.") );
-    _authNumber->setFocus();
-    return false;
-  }
-
-  if ( !partial && (disposition == "C") && (creditBy == "N") )
-  {
-    QMessageBox::warning( this, tr("Invalid Credit Method"),
-                         tr("<p>You may not enter a Disposition of Credit "
-                            "and a Credit By of None." ) );
-    _creditBy->setFocus();
-    return false;
-  }
-
-  if ( ! _miscCharge->isZero() && (!_miscChargeAccount->isValid()) )
-  {
-    QMessageBox::warning( this, tr("No Misc. Charge Account Number"),
-                         tr("<p>You may not enter a Misc. Charge without "
-                            "indicating the G/L Sales Account number for the "
-                            "charge. Please set the Misc. Charge amount to 0 "
-                            "or select a Misc. Charge Sales Account." ) );
-    _returnAuthInformation->setCurrentIndex(_returnAuthInformation->indexOf(_lineItemsPage));
-    _miscChargeAccount->setFocus();
-    return false;
-  }
-
-  if (!partial && _raitem->topLevelItemCount() == 0)
-  {
-    QMessageBox::warning( this, tr("Create Line Items for this Order"),
-                          tr("<p>You must create at least one Line Item for "
-                          "this Return Authorization before you may save it."));
-    _new->setFocus();
-    return FALSE;
-  }
-
-  if (_total->localValue() < 0 )
-  {
-    QMessageBox::information(this, tr("Total Less than Zero"),
-                             tr("<p>The Total must be a positive value.") );
-    _cust->setFocus();
-    return false;
-  }
-
-  if ( !partial && !_warehouse->isValid() )
-  {
-    QMessageBox::warning( this, tr("Invalid Receiving Site"),
-                         tr("<p>You must enter a valid Receiving Site." ) );
-    _warehouse->setFocus();
-    return false;
-  }
-
-  if ( !partial && !_shipWhs->isValid() )
-  {
-    QMessageBox::warning( this, tr("Invalid Shipping Site"),
-                         tr("<p>You must enter a valid Shipping Site." ) );
-    _shipWhs->setFocus();
-    return false;
-  }
-
+  
   // save address info in case someone wants to use 'em again later
   // but don't make any global changes to the data and ignore errors
   _billToAddr->save(AddressCluster::CHANGEONE);
+  _ignoreShiptoSignals = true;
   _shipToAddr->save(AddressCluster::CHANGEONE);
+  _ignoreShiptoSignals = false;
 
   returnSave.prepare( "UPDATE rahead "
              "   SET rahead_cust_id=:rahead_cust_id,rahead_number=:rahead_number,"
@@ -1583,6 +1532,9 @@ void returnAuthorization::sDispositionChanged()
 
 void returnAuthorization::sCreditByChanged()
 {
+  _new->setEnabled(_cust->isValid() ||
+                   (_disposition->currentIndex() == 1 && _creditBy->currentIndex() == 0));
+  
   if (_creditBy->currentIndex() == 0 && _total->localValue() > 0)
   {
     QMessageBox::information(this, tr("Credit By 'None' not allowed"),
@@ -1830,8 +1782,8 @@ void returnAuthorization::sRefund()
     if (ccq.first())
     {
       int ccpayid = ccq.value("ccpay_id").toInt();
-      QMessageBox::information( this, tr("New Credit Memo Created"),
-                                tr("<p>A new CreditMemo has been created and "
+      QMessageBox::information( this, tr("New Return Created"),
+                                tr("<p>A new Return has been created and "
                                    "assigned #%1")
                                    .arg(ccq.value("cmhead_number").toString()));
       CreditCardProcessor *cardproc = CreditCardProcessor::getProcessor();
@@ -1911,7 +1863,7 @@ void returnAuthorization::sRefund()
   else if (cmq.lastError().type() != QSqlError::NoError)
   {
     XSqlQuery rollback("ROLLBACK;");
-    ErrorReporter::error(QtCriticalMsg, this, tr("Creating R/A Credit Memo"),
+    ErrorReporter::error(QtCriticalMsg, this, tr("Creating R/A Return"),
                          cmq, __FILE__, __LINE__);
     return;
   }

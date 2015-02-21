@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -94,8 +94,8 @@ void subAccntTypes::sDelete()
     {
     case -1:
       QMessageBox::critical( this, tr("Cannot Delete G/L Subaccount Type"),
-          tr( "The selected G/L Subaccount Type cannot be deleted as it is currently used in one or more G/L Accounts.\n"
-              "You must reassign these G/L Accounts before you may delete the selected G/L Subaccount Type." ) );
+          tr( "The selected G/L Subaccount Type cannot be deleted as it is currently used in one or more Ledger Accounts.\n"
+              "You must reassign these Ledger Accounts before you may delete the selected G/L Subaccount Type." ) );
         break;
     default:
       sFillList();

@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -420,6 +420,7 @@ void dspInventoryAvailability::sEnterAdjustment()
 {
   ParameterList params;
   params.append("itemsite_id", list()->id());
+  params.append("mode", "new");
   
   adjustmentTrans *newdlg = new adjustmentTrans();
   newdlg->set(params);
@@ -450,7 +451,7 @@ void dspInventoryAvailability::sByVendorChanged()
   list()->addColumn(tr("Description"),  -1,          Qt::AlignLeft,  true, "itemdescrip");
   list()->addColumn(tr("UOM"),          _uomColumn,  Qt::AlignCenter,true, "uom_name");
   list()->addColumn(tr("LT"),           _whsColumn,  Qt::AlignCenter,true, "itemsite_leadtime");
-  list()->addColumn(tr("QOH"),          _qtyColumn,  Qt::AlignRight, true, "qoh");
+  list()->addColumn(tr("Available QOH"),_qtyColumn,  Qt::AlignRight, true, "qoh");
   list()->addColumn(tr("Allocated"),    _qtyColumn,  Qt::AlignRight, true, "allocated");
   list()->addColumn(tr("Unallocated"),  _qtyColumn,  Qt::AlignRight, true, "unallocated");
   list()->addColumn(tr("On Order"),     _qtyColumn,  Qt::AlignRight, true, "ordered");

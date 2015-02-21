@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -120,7 +120,7 @@ void state::sSave()
                  "WHERE ((state_country_id=:country_id)"
                  "   AND ((UPPER(state_abbr)=UPPER(:state_abbr) AND :state_abbr != '')"
                  "        OR (UPPER(state_name)=UPPER(:state_name) AND :state_name != ''))"
-                 "   AND (state_id!=:state_id));");
+                 "   AND (state_id != :state_id));");
   stateq.bindValue(":country_id", _country->id());
   stateq.bindValue(":state_abbr", _abbr->text());
   stateq.bindValue(":state_name", _name->text());

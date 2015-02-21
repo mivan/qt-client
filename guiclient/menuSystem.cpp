@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -20,6 +20,8 @@
 #include <QToolBar>
 #include <QMdiArea>
 #include <QMdiSubWindow>
+#include <QDesktopServices>
+#include <QUrl>
 
 #include "xtsettings.h"
 #include "guiclient.h"
@@ -112,7 +114,7 @@ menuSystem::menuSystem(GUIClient *Pparent) :
     { "sys.hotkeys",                  tr("&Hot Keys..."),                   SLOT(sHotKeys()),                  systemMenu, "true",  NULL,   NULL,   !(_privileges->check("MaintainPreferencesSelf") || _privileges->check("MaintainPreferencesOthers")) },
     { "sys.rescanPrivileges",         tr("Rescan &Privileges"),             SLOT(sRescanPrivileges()),         systemMenu, "true",                                      NULL, NULL, true },
     { "separator",                    NULL,                                 NULL,                              systemMenu, "true",                                      NULL, NULL, true },
-    { "sys.maintainUsers",            tr("Maintain &Users..."),             SLOT(sMaintainUsers()),            systemMenu, "MaintainUsers",       NULL, NULL, true },
+    { "sys.maintainUsers",            tr("Maintain &User Accounts..."),             SLOT(sMaintainUsers()),            systemMenu, "MaintainUsers",       NULL, NULL, true },
     { "sys.maintainGroups",           tr("Maintain &Roles..."),            SLOT(sMaintainGroups()),           systemMenu, "MaintainGroups",      NULL, NULL, true },
 
     { "menu",                         tr("&Employees"),                     (char*)employeeMenu,               systemMenu, "true",                                      NULL, NULL, true },
@@ -190,8 +192,9 @@ menuSystem::menuSystem(GUIClient *Pparent) :
 #ifndef Q_WS_MACX
     { "separator",		NULL,				NULL,		helpMenu, "true", NULL, NULL, true	},
 #endif
-    { "help.tableOfContents",	tr("Table of &Contents..."),	SLOT(sTOC()),	helpMenu, "true", NULL, NULL, true	},
-    { "help.download",          tr("Download..."),           SLOT(sDownload()), helpMenu, "true", NULL, NULL, true      }
+//  { "help.tableOfContents",	tr("Table of &Contents..."),	SLOT(sTOC()),	helpMenu, "true", NULL, NULL, true	},
+//  { "help.download",          tr("Download..."),           SLOT(sDownload()), helpMenu, "true", NULL, NULL, true      }
+    { "help.ReferenceGuide",          tr("Reference &Guide..."),           SLOT(sReferenceGuide()), helpMenu, "true", NULL, NULL, true      }
   };
   addActionsToMenu(help, sizeof(help) / sizeof(help[0]));
 
@@ -385,6 +388,10 @@ void menuSystem::sTOC()
 void menuSystem::sDownload()
 {
   omfgThis->handleNewWindow(new helpDownload());
+}
+void menuSystem::sReferenceGuide()
+{
+  QDesktopServices::openUrl(QUrl("http://www.xtuple.org/sites/default/files/refguide/current/index.html"));
 }
 
 void menuSystem::sFixACL()

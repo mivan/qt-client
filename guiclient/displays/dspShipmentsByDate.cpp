@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -64,6 +64,10 @@ enum SetResponse dspShipmentsByDate::set(const ParameterList &pParams)
   if (valid)
     _dates->setEndDate(param.toDate());
   
+  param = pParams.value("warehous_id", &valid);
+  if (valid)
+    _warehouse->setId(param.toInt());
+  
   if (pParams.inList("run"))
   {
     sFillList();
@@ -91,6 +95,7 @@ bool dspShipmentsByDate::setParams(ParameterList & params)
     return false;
   }
 
+  _warehouse->appendValue(params);
   if (_metrics->boolean("MultiWhs"))
     params.append("MultiWhs");
   _dates->appendValue(params);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -115,7 +115,7 @@ void crmaccounts::sView()
 void crmaccounts::sDelete()
 {
   if (QMessageBox::question(this, tr("Delete?"),
-                            tr("Are you sure you want to delete this CRM Account?"),
+                            tr("Are you sure you want to delete this Account?"),
                             QMessageBox::Yes,
                             QMessageBox::No | QMessageBox::Default) == QMessageBox::No)
     return;
@@ -124,7 +124,7 @@ void crmaccounts::sDelete()
   delq.prepare("DELETE FROM crmacct WHERE crmacct_id = :crmacct_id;");
   delq.bindValue(":crmacct_id", list()->id());
   delq.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error deleting CRM Account"),
+  if (ErrorReporter::error(QtCriticalMsg, this, tr("Error deleting Account"),
                            delq, __FILE__, __LINE__))
     return;
   sFillList();

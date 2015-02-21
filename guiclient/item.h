@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -34,6 +34,7 @@ public:
     static void viewItem( int pId );
     virtual bool checkSitePrivs( int itemsiteid );
     Q_INVOKABLE virtual int id() { return _itemid; }
+    Q_INVOKABLE virtual int mode() { return _mode; }
 
 public slots:
     virtual SetResponse set( const ParameterList & pParams );
@@ -95,7 +96,9 @@ protected slots:
     virtual void languageChange();
 
 signals:
+    void populated();
     void newId(int);
+    void newMode(int);
     void saved(int);
 
 private:

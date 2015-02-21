@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -21,6 +21,7 @@
 
 #include "characteristic.h"
 #include "customer.h"
+#include "errorReporter.h"
 #include "failedPostList.h"
 #include "parameterwidget.h"
 #include "printQuote.h"
@@ -251,7 +252,7 @@ void quotes::sConvert(int pType)
                     QMessageBox::information(this, tr("Quote for Prospect"),
                                 tr("<p>The prospect must be manually "
                                    "converted to customer from either the "
-                                   "CRM Account or Customer windows before "
+                                   "Account or Customer windows before "
                                    "coverting this quote."));
                     notConverted.append(selected[i]);
                     continue;
@@ -262,7 +263,7 @@ void quotes::sConvert(int pType)
                 QMessageBox::information(this, tr("Quote for Prospect"),
                             tr("<p>The prospect must be manually "
                                "converted to customer from either the "
-                               "CRM Account or Customer windows before "
+                               "Account or Customer windows before "
                                "coverting this quote."));
                 notConverted.append(selected[i]);
                 continue;
@@ -287,10 +288,10 @@ void quotes::sConvert(int pType)
             else
               omfgThis->sQuotesUpdated(soheadid);
           }
-          else if (convert.lastError().type() != QSqlError::NoError)
+          else if (ErrorReporter::error(QtCriticalMsg, this, tr("Convert Quote"),
+                                        convert, __FILE__, __LINE__))
           {
             notConverted.append(selected[i]);
-            systemError(this, convert.lastError().databaseText(), __FILE__, __LINE__);
             continue;
           }
         }

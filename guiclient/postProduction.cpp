@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -99,6 +99,17 @@ void postProduction::sHandleWoid(int pWoid)
 {
   if(!_privileges->check("CloseWorkOrders"))
     _closeWo->setChecked(false);
+    
+  XSqlQuery itemfrac;
+  itemfrac.prepare( "SELECT item_fractional "
+                "FROM wo,itemsite,item "
+                "WHERE ((wo_id=:wo_id) "
+                "AND (wo_itemsite_id=itemsite_id) "
+                "AND (itemsite_item_id = item_id)); ");
+  itemfrac.bindValue(":wo_id", pWoid);
+  itemfrac.exec();
+  if (itemfrac.first() && itemfrac.value("item_fractional").toBool() == false)
+      _qty->setValidator(new QIntValidator(this));  
 
   XSqlQuery postHandleWoid;
   if (DEBUG)

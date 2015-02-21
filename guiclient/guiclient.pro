@@ -11,28 +11,32 @@ INCLUDEPATH += ../scriptapi \
                ../../xtuple-build-desktop/common \
                ../../xtuple-build-desktop/widgets \
                ../../xtuple-build-desktop/widgets/tmp/lib \
-               ../../xtuple-build-desktop/guiclient .
+               ../../xtuple-build-desktop/guiclient . \
+               $(CSVIMP_HEADERS)/csvimpcommon $(CSVIMP_HEADERS)/plugin
 
 DEPENDPATH  += $${INCLUDEPATH}
 
 win32-msvc* {
-  PRE_TARGETDEPS += ../lib/xtuplecommon.lib    \
-                    ../lib/xtuplescriptapi.lib \
-                    ../lib/xtuplewidgets.lib
+  PRE_TARGETDEPS += ../lib/xtuplecommon.$${XTLIBEXT}    \
+                    ../lib/xtuplescriptapi.lib          \
+                    ../lib/xtuplewidgets.lib            \
+                    $${OPENRPT_LIBDIR}/MetaSQL.$${OPENRPTLIBEXT}  \
+                    $${OPENRPT_LIBDIR}/renderer.$${OPENRPTLIBEXT} \
+                    $${OPENRPT_LIBDIR}/wrtembed.$${OPENRPTLIBEXT} \
+                    $${OPENRPT_LIBDIR}/openrptcommon.$${OPENRPTLIBEXT}
 } else {
-  PRE_TARGETDEPS += ../lib/libxtuplecommon.a    \
-                    ../lib/libxtuplescriptapi.a \
-                    ../lib/libxtuplewidgets.a   \
-                    ../$${OPENRPT_BLD}/lib/libMetaSQL.a  \
-                    ../$${OPENRPT_BLD}/lib/librenderer.a \
-                    ../$${OPENRPT_BLD}/lib/libwrtembed.a \
-                    ../$${OPENRPT_BLD}/lib/libDmtx_Library.a \
-                    ../$${OPENRPT_BLD}/lib/libcommon.a
+  PRE_TARGETDEPS += ../lib/libxtuplecommon.$${XTLIBEXT} \
+                    ../lib/libxtuplescriptapi.a         \
+                    ../lib/libxtuplewidgets.a           \
+                    $${OPENRPT_LIBDIR}/libMetaSQL.$${OPENRPTLIBEXT}  \
+                    $${OPENRPT_LIBDIR}/librenderer.$${OPENRPTLIBEXT} \
+                    $${OPENRPT_LIBDIR}/libwrtembed.$${OPENRPTLIBEXT} \
+                    $${OPENRPT_LIBDIR}/libopenrptcommon.$${OPENRPTLIBEXT}
 }
 
-LIBS        += -L../lib -L../$${OPENRPT_BLD}/lib \
-               -lxtuplecommon -lxtuplewidgets -lwrtembed -lcommon -lrenderer \
-               -lxtuplescriptapi -lDmtx_Library -lMetaSQL
+QMAKE_LIBDIR = ../lib $${OPENRPT_LIBDIR} $$QMAKE_LIBDIR
+LIBS        += -lxtuplecommon -lxtuplewidgets -lwrtembed -lopenrptcommon
+LIBS        += -lrenderer -lxtuplescriptapi $${DMTXLIB} -lMetaSQL
 
 #not the best way to handle this, but it should do
 mac:!static:contains(QT_CONFIG, qt_framework) {
@@ -97,6 +101,7 @@ FORMS =   absoluteCalendarItem.ui               \
           arOpenItem.ui                         \
           arWorkBench.ui                        \
           archRestoreSalesHistory.ui            \
+          assessFinanceCharges.ui               \
           assignClassCodeToPlannerCode.ui       \
           assignItemToPlannerCode.ui            \
           assignLotSerial.ui                    \
@@ -552,6 +557,7 @@ FORMS =   absoluteCalendarItem.ui               \
           todoItem.ui                           \
           todoList.ui                           \
           todoListCalendar.ui                   \
+          toggleBankrecCleared.ui               \
           transactionInformation.ui             \
           transferOrder.ui                      \
           transferOrderItem.ui                  \
@@ -646,6 +652,7 @@ HEADERS = ../common/format.h                    \
           arOpenItem.h                          \
           arWorkBench.h                         \
           archRestoreSalesHistory.h             \
+          assessFinanceCharges.h                \
           assignClassCodeToPlannerCode.h        \
           assignItemToPlannerCode.h             \
           assignLotSerial.h                     \
@@ -1145,6 +1152,7 @@ HEADERS = ../common/format.h                    \
           todoItem.h                    \
           todoList.h                    \
           todoListCalendar.h            \
+          toggleBankrecCleared.h        \
           toitemTableModel.h            \
           toitemTableView.h             \
           transactionInformation.h      \
@@ -1254,6 +1262,7 @@ SOURCES = absoluteCalendarItem.cpp              \
           arOpenItem.cpp                        \
           arWorkBench.cpp                       \
           archRestoreSalesHistory.cpp           \
+          assessFinanceCharges.cpp              \
           assignClassCodeToPlannerCode.cpp      \
           assignItemToPlannerCode.cpp           \
           assignLotSerial.cpp                   \
@@ -1752,6 +1761,7 @@ SOURCES = absoluteCalendarItem.cpp              \
           todoItem.cpp                          \
           todoList.cpp                          \
           todoListCalendar.cpp                  \
+          toggleBankrecCleared.cpp              \
           toitemTableModel.cpp                  \
           toitemTableView.cpp                   \
           transactionInformation.cpp            \
@@ -1838,7 +1848,7 @@ include( hunspell.pri )
 QT += xml sql script scripttools network
 QT += webkit xmlpatterns
 
-RESOURCES += guiclient.qrc ../$${OPENRPT_DIR}/OpenRPT/images/OpenRPTMetaSQL.qrc
+RESOURCES += guiclient.qrc $${OPENRPT_IMAGE_DIR}/OpenRPTMetaSQL.qrc
 
 #CONFIG += debug
 

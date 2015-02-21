@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -47,19 +47,32 @@ dspBookings::dspBookings(QWidget* parent, const char*, Qt::WFlags fl)
   parameterWidget()->applyDefaultFilterSet();
   setupCharacteristics(characteristic::SalesOrders);
 
-  list()->addColumn(tr("Order #"),          _orderColumn,    Qt::AlignLeft,   true,  "cohead_number"  );
-  list()->addColumn(tr("Line #"),           _seqColumn,      Qt::AlignLeft,   true,  "f_linenumber"  );
-  list()->addColumn(tr("Ord. Date"),        _dateColumn,     Qt::AlignCenter, true,  "cohead_orderdate");
-  list()->addColumn(tr("Cust. #"),          _itemColumn,     Qt::AlignLeft,   true,  "cust_number"  );
-  list()->addColumn(tr("Customer"),         -1,              Qt::AlignLeft,   false,  "cust_name"  );
-  list()->addColumn(tr("Item Number"),      _itemColumn,     Qt::AlignLeft,   true,  "item_number"  );
-  list()->addColumn(tr("Description"),      -1,              Qt::AlignLeft,   true,  "itemdescription"  );
-  list()->addColumn(tr("Ordered"),          _qtyColumn,      Qt::AlignRight,  true,  "coitem_qtyord" );
-  list()->addColumn(tr("Unit Price"),       _priceColumn,    Qt::AlignRight,  false,  "coitem_price" );
-  list()->addColumn(tr("Ext. Price"),       _bigMoneyColumn, Qt::AlignRight,  false,  "extprice" );
-  list()->addColumn(tr("Currency"),         _currencyColumn, Qt::AlignCenter, false,  "currAbbr" );
-  list()->addColumn(tr("Base Unit Price"),  _priceColumn,    Qt::AlignRight,  true,  "baseunitprice" );
-  list()->addColumn(tr("Base Ext. Price"),  _bigMoneyColumn, Qt::AlignRight,  true,  "baseextprice" );
+  list()->addColumn(tr("Order #"),            _orderColumn,    Qt::AlignLeft,   true,  "cohead_number"  );
+  list()->addColumn(tr("Line #"),             _seqColumn,      Qt::AlignLeft,   true,  "f_linenumber"  );
+  list()->addColumn(tr("Ord. Date"),          _dateColumn,     Qt::AlignCenter, true,  "cohead_orderdate");
+  list()->addColumn(tr("Cust. #"),            _itemColumn,     Qt::AlignLeft,   true,  "cust_number"  );
+  list()->addColumn(tr("Customer"),           -1,              Qt::AlignLeft,   false, "cust_name"  );
+  list()->addColumn(tr("Item Number"),        _itemColumn,     Qt::AlignLeft,   true,  "item_number"  );
+  list()->addColumn(tr("Description"),        -1,              Qt::AlignLeft,   true,  "itemdescription"  );
+  list()->addColumn(tr("Ordered"),            _qtyColumn,      Qt::AlignRight,  true,  "coitem_qtyord" );
+  if (_privileges->check("ViewCustomerPrices"))
+  {
+    list()->addColumn(tr("Unit Price"),       _priceColumn,    Qt::AlignRight,  false, "coitem_price" );
+    list()->addColumn(tr("Ext. Price"),       _bigMoneyColumn, Qt::AlignRight,  false, "extprice" );
+    list()->addColumn(tr("Currency"),         _currencyColumn, Qt::AlignCenter, false, "currAbbr" );
+    list()->addColumn(tr("Base Unit Price"),  _priceColumn,    Qt::AlignRight,  true,  "baseunitprice" );
+    list()->addColumn(tr("Base Ext. Price"),  _bigMoneyColumn, Qt::AlignRight,  true,  "baseextprice" );
+  }
+  if (_privileges->check("ViewCosts"))
+  {
+    list()->addColumn(tr("Unit Cost"),        _costColumn,     Qt::AlignRight,  false, "coitem_unitcost" );
+    list()->addColumn(tr("Ext. Cost"),        _bigMoneyColumn, Qt::AlignRight,  false, "extcost" );
+  }
+  if (_privileges->check("ViewCustomerPrices") && _privileges->check("ViewCosts"))
+  {
+    list()->addColumn(tr("Margin"),           _bigMoneyColumn, Qt::AlignRight,  false, "margin" );
+    list()->addColumn(tr("Margin %"),         _prcntColumn,    Qt::AlignRight,  false, "marginpercent" );
+  }
 }
 
 enum SetResponse dspBookings::set(const ParameterList &pParams)

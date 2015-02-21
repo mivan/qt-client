@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -44,9 +44,9 @@ void purgeCreditMemos::sPurge()
     return;
   }
 
-  if ( QMessageBox::warning( this, tr("Delete Invoice Records"),
-                             tr( "You will not be able to re-print a Credit Memo if you delete it.\n"
-                                 "Are you sure that you want to delete the selected Credit Memos?" ),
+  if ( QMessageBox::warning( this, tr("Delete Return Records"),
+                             tr( "You will not be able to re-print a Return if you delete it.\n"
+                                 "Are you sure that you want to delete the selected Returns?" ),
                              tr("Yes"), tr("No"), QString::null, 0, 1) == 0)
   {
     purgePurge.prepare("SELECT purgeCreditMemos(:cutOffDate) AS result;");

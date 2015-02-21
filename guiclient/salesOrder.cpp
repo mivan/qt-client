@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -167,7 +167,6 @@ salesOrder::salesOrder(QWidget *parent, const char *name, Qt::WFlags fl)
   _custtaxzoneid     = -1;
   _amountOutstanding = 0.0;
   _crmacctid         =-1;
-  _locked            =false;
 
   _captive       = FALSE;
 
@@ -207,14 +206,17 @@ salesOrder::salesOrder(QWidget *parent, const char *name, Qt::WFlags fl)
   _soitem->addColumn(tr("Extended"),        _priceColumn,          Qt::AlignRight,  true,  "extprice");
   _soitem->addColumn(tr("Cust. Price"),     _priceColumn,          Qt::AlignRight,  false, "coitem_custprice");
   _soitem->addColumn(tr("Cust. Discount"),  _priceColumn,          Qt::AlignRight,  false, "discountfromcust");
-  _soitem->addColumn(tr("Unit Cost"),       _priceColumn,          Qt::AlignRight,  false, "coitem_unitcost");
-  _soitem->addColumn(tr("Margin"),          _priceColumn,          Qt::AlignRight,  false, "margin");
-  _soitem->addColumn(tr("Margin %"),        _priceColumn,          Qt::AlignRight,  false, "marginpercent");
+  _soitem->addColumn(tr("Unit Cost"),       _costColumn,           Qt::AlignRight,  false, "coitem_unitcost");
+  if (_privileges->check("ShowMarginsOnSalesOrder"))
+  {
+    _soitem->addColumn(tr("Margin"),          _priceColumn,          Qt::AlignRight,  false, "margin");
+    _soitem->addColumn(tr("Margin %"),        _prcntColumn,          Qt::AlignRight,  false, "marginpercent");
+  }
   _soitem->addColumn(tr("Prod. Weight"),    _qtyColumn,            Qt::AlignRight,  false, "prodweight");
   _soitem->addColumn(tr("Pkg. Weight"),     _qtyColumn,            Qt::AlignRight,  false, "packweight");
   _soitem->addColumn(tr("Supply Type"),     _itemColumn,           Qt::AlignCenter, false, "spplytype");
   _soitem->addColumn(tr("Order Number"),    _itemColumn,           Qt::AlignCenter, false, "ordrnumbr");
-  _soitem->addColumn(tr("On Hand"),         _qtyColumn,            Qt::AlignCenter, true,  "itemsite_qtyonhand");
+  _soitem->addColumn(tr("Available QOH"),   _qtyColumn,            Qt::AlignCenter, true,  "availableqoh");
   if (_metrics->boolean("EnableSOReservations"))
   {
     _soitem->addColumn(tr("Reserved"),      _qtyColumn,            Qt::AlignCenter, true,  "reserved");
@@ -277,6 +279,12 @@ salesOrder::salesOrder(QWidget *parent, const char *name, Qt::WFlags fl)
     _saveAndAdd->hide();
 
   _more->setChecked(_preferences->boolean("SoShowAll"));
+  
+  if(_metrics->boolean("DefaultSOLineItemsTab"))
+    _salesOrderInformation->setCurrentIndex(1);
+  else
+    _salesOrderInformation->setCurrentIndex(0);
+  
 
   _miscChargeAccount->setType(GLCluster::cRevenue | GLCluster::cExpense);
 
@@ -776,7 +784,7 @@ bool salesOrder::save(bool partial)
                           tr("You must select a Sales Rep. for this order before you may save it.") )
          << GuiErrorCheck(!_terms->isValid(), _terms,
                           tr("You must select the Terms for this order before you may save it.") )
-         << GuiErrorCheck((_shipTo->id() == -1) && (!_shipToAddr->isEnabled()), _shipTo,
+         << GuiErrorCheck((_shipTo->id() == -1) && (!_shipToName->isEnabled()), _shipTo,
                           tr("You must select a Ship-To for this order before you may save it.") )
          << GuiErrorCheck(_total->localValue() < 0, _cust,
                           tr("<p>The Total must be a positive value.") )
@@ -838,9 +846,11 @@ bool salesOrder::save(bool partial)
                    "SELECT quhead_id"
                    "  FROM quhead"
                    " WHERE ((quhead_cust_id=:cohead_cust_id)"
+                   "   AND  (quhead_number<>:fromquote)"
                    "   AND  (quhead_id<>:cohead_id)"
                    "   AND  (UPPER(quhead_custponumber) = UPPER(:cohead_custponumber)) );" );
         saveSales.bindValue(":cohead_cust_id", _cust->id());
+        saveSales.bindValue(":fromquote", _fromQuote->text());
         saveSales.bindValue(":cohead_id", _soheadid);
         saveSales.bindValue(":cohead_custponumber", _custPONumber->text());
         saveSales.exec();
@@ -1236,33 +1246,19 @@ bool salesOrder::save(bool partial)
   saveSales.bindValue(":quhead_status", "O");
 
   saveSales.exec();
-  if (saveSales.lastError().type() != QSqlError::NoError)
+  if (ErrorReporter::error(QtCriticalMsg, this, tr("Saving Order"),
+                           saveSales, __FILE__, __LINE__))
   {
-      systemError(this, saveSales.lastError().databaseText(), __FILE__, __LINE__);
     return false;
   }
 
-  // if this is a new so record and we haven't saved already
-  // then we need to lock this record.
-  if ((cNew == _mode) && (!_saved) && !_locked)
+  // TODO: should this be done before saveSales.exec()?
+  if ((cNew == _mode) && (!_saved)
+      && ! _lock.acquire(ISORDER(_mode) ? "cohead" : "quhead", _soheadid))
   {
-    // should I bother to check because no one should have this but us?
-    saveSales.prepare("SELECT tryLock(oid::integer, :head_id) AS locked "
-              "FROM pg_class "
-              "WHERE relname=:table;");
-    saveSales.bindValue(":head_id", _soheadid);
-    if (ISORDER(_mode))
-      saveSales.bindValue(":table", "cohead");
-    else
-      saveSales.bindValue(":table", "quhead");
-    saveSales.exec();
-    if (saveSales.first())
-      _locked = saveSales.value("locked").toBool();
-    else if (saveSales.lastError().type() != QSqlError::NoError)
-    {
-      systemError(this, saveSales.lastError().databaseText(), __FILE__, __LINE__);
-      return false;
-    }
+    ErrorReporter::error(QtCriticalMsg, this, tr("Locking Error"),
+                         _lock.lastError(), __FILE__, __LINE__);
+    return false;
   }
 
   _saved = true;
@@ -1286,6 +1282,37 @@ bool salesOrder::save(bool partial)
   {
     populateCMInfo();
     populateCCInfo();
+    
+    if (_mode == cNew && _metrics->boolean("AutoCreateProjectsForOrders"))
+    {
+      saveSales.prepare("SELECT cohead_prj_id "
+                        "FROM cohead "
+                        "WHERE cohead_id=:head_id;");
+      saveSales.bindValue(":head_id", _soheadid);
+      saveSales.exec();
+      if (saveSales.first())
+        _project->setId(saveSales.value("cohead_prj_id").toInt());
+      else if (saveSales.lastError().type() != QSqlError::NoError)
+      {
+        systemError(this, saveSales.lastError().databaseText(), __FILE__, __LINE__);
+        return false;
+      }
+    }
+    if (_mode == cNewQuote && _metrics->boolean("AutoCreateProjectsForOrders"))
+    {
+      saveSales.prepare("SELECT quhead_prj_id "
+                        "FROM quhead "
+                        "WHERE quhead_id=:head_id;");
+      saveSales.bindValue(":head_id", _soheadid);
+      saveSales.exec();
+      if (saveSales.first())
+        _project->setId(saveSales.value("quhead_prj_id").toInt());
+      else if (saveSales.lastError().type() != QSqlError::NoError)
+      {
+        systemError(this, saveSales.lastError().databaseText(), __FILE__, __LINE__);
+        return false;
+      }
+    }
   }
 
   emit saved(_soheadid);
@@ -1295,6 +1322,17 @@ bool salesOrder::save(bool partial)
 
 void salesOrder::sPopulateMenu(QMenu *pMenu)
 {
+  if (_mode == cView)
+  {
+    bool  didsomething = false;
+    if (_numSelected == 1)
+    {
+      didsomething = true;
+      if (_lineMode == cClosed)
+        pMenu->addAction(tr("Open Line..."), this, SLOT(sAction()));
+    }
+  }
+  
   if ((_mode == cNew) || (_mode == cEdit))
   {
     QAction *menuItem;
@@ -1723,7 +1761,7 @@ void salesOrder::sPopulateCustomerInfo(int pCustid)
                 "       0.0 AS commission,"
                 "       NULL AS cust_creditstatus, NULL AS cust_terms_id,"
                 "       prospect_taxzone_id AS cust_taxzone_id, prospect_cntct_id AS cust_cntct_id, "
-                "       TRUE AS cust_ffshipto, NULL AS cust_ffbillto, "
+                "       TRUE AS cust_ffshipto, TRUE AS cust_ffbillto, "
                 "       NULL AS cust_usespos, NULL AS cust_blanketpos,"
                 "       NULL AS cust_shipvia,"
                 "       -1 AS shiptoid,"
@@ -1920,6 +1958,7 @@ void salesOrder::populateShipto(int pShiptoid)
   else
   {
     _shipTo->setId(-1);
+    _shipTo->setCustid(_cust->id());
     _shipToName->clear();
     _shipToAddr->clear();
     _shipToCntct->clear();
@@ -1992,6 +2031,7 @@ void salesOrder::sNew()
 void salesOrder::sCopyToShipto()
 {
   _shipTo->setId(-1);
+  _shipTo->setCustid(_cust->id());
   _shipToName->setText(_billToName->text());
   _shipToAddr->setId(_billToAddr->id());
   if (_billToAddr->id() <= 0)
@@ -2129,7 +2169,7 @@ void salesOrder::sHandleButtons()
           }
         }
 
-        if (!selected->rawValue("coitem_subnumber").toInt() == 0)
+        if (selected->rawValue("coitem_subnumber").toInt() != 0)
         {
           _edit->setText(tr("View"));
           _delete->setEnabled(FALSE);
@@ -2200,51 +2240,57 @@ void salesOrder::sAction()
   if (_lineMode == cCanceled)
     return;
 
-  if ( (_mode == cNew) || (_mode == cEdit) )
+  int _soitemid = _soitem->id();
+  
+  if (_lineMode == cClosed)
   {
-    if (_lineMode == cClosed)
-      actionSales.prepare( "UPDATE coitem "
-                 "SET coitem_status='O' "
-                 "WHERE (coitem_id=:coitem_id);" );
-    else
-    {
-      actionSales.prepare( "SELECT qtyAtShipping(:coitem_id) AS atshipping;");
-      actionSales.bindValue(":coitem_id", _soitem->id());
-      actionSales.exec();
-      if (actionSales.first() && actionSales.value("atshipping").toDouble() > 0)
-      {
-        QMessageBox::information(this, tr("Cannot Close Item"),
-                                 tr("The item cannot be Closed at this time as there is inventory at shipping.") );
-        return;
-      }
-      if (_metrics->boolean("EnableSOReservations"))
-        sUnreserveStock();
-      actionSales.prepare( "UPDATE coitem "
-                 "SET coitem_status='C' "
-                 "WHERE (coitem_id=:coitem_id);" );
-    }
-    actionSales.bindValue(":coitem_id", _soitem->id());
+    actionSales.prepare( "UPDATE coitem "
+                        "SET coitem_status='O' "
+                        "WHERE (coitem_id=:coitem_id);" );
+    actionSales.bindValue(":coitem_id", _soitemid);
     actionSales.exec();
-    sFillItemList();
   }
+  else if ( (_mode == cNew) || (_mode == cEdit) )
+  {
+    actionSales.prepare( "SELECT qtyAtShipping(:coitem_id) AS atshipping;");
+    actionSales.bindValue(":coitem_id", _soitemid);
+    actionSales.exec();
+    if (actionSales.first() && actionSales.value("atshipping").toDouble() > 0)
+    {
+      QMessageBox::information(this, tr("Cannot Close Item"),
+                               tr("The item cannot be Closed at this time as there is inventory at shipping.") );
+      return;
+    }
+    if (_metrics->boolean("EnableSOReservations"))
+      sUnreserveStock();
+    actionSales.prepare( "UPDATE coitem "
+                        "SET coitem_status='C' "
+                        "WHERE (coitem_id=:coitem_id);" );
+    actionSales.bindValue(":coitem_id", _soitemid);
+    actionSales.exec();
+  }
+  
+  sFillItemList();
 }
 
 void salesOrder::sDelete()
 {
-  XSqlQuery deleteSales;
-  if ( (_mode == cEdit) || (_mode == cNew) )
+  if (QMessageBox::question(this, tr("Delete Selected Line Item?"),
+                            tr("<p>Are you sure that you want to delete the "
+                               "selected Line Item?"),
+                            QMessageBox::Yes,
+                            QMessageBox::No | QMessageBox::Default) == QMessageBox::Yes)
   {
-    if (QMessageBox::question(this, tr("Delete Selected Line Item?"),
-                              tr("<p>Are you sure that you want to delete the "
-                                   "selected Line Item?"),
-                              QMessageBox::Yes,
-                              QMessageBox::No | QMessageBox::Default) == QMessageBox::Yes)
+    int _soitemid = _soitem->id();
+    
+    XSqlQuery deleteSales;
+    if ( (_mode == cEdit) || (_mode == cNew) )
     {
       if (_metrics->boolean("EnableSOReservations"))
         sUnreserveStock();
-
+      
       deleteSales.prepare( "SELECT deleteSOItem(:soitem_id) AS result;");
-      deleteSales.bindValue(":soitem_id", _soitem->id());
+      deleteSales.bindValue(":soitem_id", _soitemid);
       deleteSales.exec();
       if (deleteSales.first())
       {
@@ -2256,16 +2302,16 @@ void salesOrder::sDelete()
           systemError(this, storedProcErrorLookup("deleteSOItem", result),  __FILE__, __LINE__);
       }
       else if (deleteSales.lastError().type() != QSqlError::NoError)
-          systemError(this, deleteSales.lastError().databaseText(),                   __FILE__, __LINE__);
-
-          sFillItemList();
-
+        systemError(this, deleteSales.lastError().databaseText(),                   __FILE__, __LINE__);
+      
+      sFillItemList();
+      
       if (_soitem->topLevelItemCount() == 0)
       {
         if (QMessageBox::question(this, tr("Cancel Sales Order?"),
                                   tr("<p>You have deleted all of the Line "
-                                       "Items for this Sales Order. Would you "
-                                       "like to cancel this Sales Order?"),
+                                     "Items for this Sales Order. Would you "
+                                     "like to cancel this Sales Order?"),
                                   QMessageBox::Yes,
                                   QMessageBox::No | QMessageBox::Default) == QMessageBox::Yes)
         {
@@ -2280,44 +2326,43 @@ void salesOrder::sDelete()
               systemError(this, storedProcErrorLookup("deleteSO", result),  __FILE__, __LINE__);
           }
           else if (deleteSales.lastError().type() != QSqlError::NoError)
-              systemError(this, deleteSales.lastError().databaseText(),               __FILE__, __LINE__);
-
+            systemError(this, deleteSales.lastError().databaseText(),               __FILE__, __LINE__);
+          
           omfgThis->sSalesOrdersUpdated(_soheadid);
           _captive = false;
           clear();
         }
       }
     }
-  }
-  else if ( (_mode == cNewQuote) || (_mode == cEditQuote) )
-  {
-    deleteSales.prepare( "DELETE FROM quitem "
-               "WHERE (quitem_id=:quitem_id);" );
-    deleteSales.bindValue(":quitem_id", _soitem->id());
-    deleteSales.exec();
-    sFillItemList();
-
-    if (_soitem->topLevelItemCount() == 0)
+    else if ( (_mode == cNewQuote) || (_mode == cEditQuote) )
     {
-      if ( QMessageBox::question(this, tr("Cancel Quote?"),
-                                 tr("<p>You have deleted all of the order "
+      deleteSales.prepare( "SELECT deleteQuoteItem(:quitem_id) AS result;");
+      deleteSales.bindValue(":quitem_id", _soitem->id());
+      deleteSales.exec();
+      sFillItemList();
+      
+      if (_soitem->topLevelItemCount() == 0)
+      {
+        if ( QMessageBox::question(this, tr("Cancel Quote?"),
+                                   tr("<p>You have deleted all of the order "
                                       "lines for this Quote. Would you like to "
                                       "cancel this Quote?."),
-                                 QMessageBox::Yes,
-                                 QMessageBox::No | QMessageBox::Default) == QMessageBox::Yes)
-      {
-        deleteSales.prepare("SELECT deleteQuote(:quhead_id, :quhead_number) AS result;");
-        deleteSales.bindValue(":quhead_id", _soheadid);
-        deleteSales.bindValue(":quhead_number", _orderNumber->text());
-        deleteSales.exec();
-        if (deleteSales.first() && !deleteSales.value("result").toBool())
-          systemError(this, tr("Could not delete Quote."),  __FILE__, __LINE__);
-        else if (deleteSales.lastError().type() != QSqlError::NoError)
-          systemError(this, deleteSales.lastError().databaseText(),   __FILE__, __LINE__);
-
-        omfgThis->sQuotesUpdated(_soheadid);
-        _captive = false;
-        clear();
+                                   QMessageBox::Yes,
+                                   QMessageBox::No | QMessageBox::Default) == QMessageBox::Yes)
+        {
+          deleteSales.prepare("SELECT deleteQuote(:quhead_id, :quhead_number) AS result;");
+          deleteSales.bindValue(":quhead_id", _soheadid);
+          deleteSales.bindValue(":quhead_number", _orderNumber->text());
+          deleteSales.exec();
+          if (deleteSales.first() && (deleteSales.value("result").toInt() < 0))
+            systemError(this, tr("Could not delete Quote."),  __FILE__, __LINE__);
+          else if (deleteSales.lastError().type() != QSqlError::NoError)
+            systemError(this, deleteSales.lastError().databaseText(),   __FILE__, __LINE__);
+          
+          omfgThis->sQuotesUpdated(_soheadid);
+          _captive = false;
+          clear();
+        }
       }
     }
   }
@@ -2328,35 +2373,20 @@ void salesOrder::populate()
   if ( (_mode == cNew) || (_mode == cEdit) || (_mode == cView) )
   {
     XSqlQuery so;
-    if (_mode == cEdit && !_locked)
+    if (_mode == cEdit
+        && !_lock.acquire(ISORDER(_mode) ? "cohead" : "quhead", _soheadid))
     {
-      // Lock the record
-      so.prepare("SELECT tryLock(oid::integer, :sohead_id) AS locked "
-                 "FROM pg_class "
-                 "WHERE relname=:table;");
-      so.bindValue(":sohead_id", _soheadid);
-      if (ISORDER(_mode))
-        so.bindValue(":table", "cohead");
-      else
-        so.bindValue(":table", "quhead");
-      so.exec();
-      if (so.first())
+      if (_lock.isLockedOut())
       {
-        if (so.value("locked").toBool() != true)
-        {
-          QMessageBox::critical( this, tr("Record Currently Being Edited"),
-                                 tr("<p>The record you are trying to edit is currently being edited "
-                                      "by another user. Continue in View Mode.") );
-          setViewMode();
-        }
-        else
-          _locked = true;
+        QMessageBox::critical(this, tr("Record Currently Being Edited"),
+                              tr("<p>The record you are trying to edit is "
+                                 "currently being edited by another user. "
+                                 "Continue in View Mode.") );
+        setViewMode();
       }
-      else
+      else if (ErrorReporter::error(QtCriticalMsg, this, tr("Locking Error"),
+                                    _lock.lastError(), __FILE__, __LINE__))
       {
-        QMessageBox::critical( this, tr("Cannot Lock Record for Editing"),
-                               tr("<p>There was an unexpected error while trying to lock the record "
-                                    "for editing. Please report this to your administator.") );
         setViewMode();
       }
     }
@@ -2472,6 +2502,7 @@ void salesOrder::populate()
       }
 
       _shipTo->setId(so.value("cohead_shipto_id").toInt());
+      _shipTo->setCustid(_cust->id());
       _ignoreSignals=false;
 
       if (_mode == cView)
@@ -2536,6 +2567,9 @@ void salesOrder::populate()
       sFillCharacteristic();
       emit populated();
       sFillItemList();
+      // TODO - a partial save is not saving everything
+      if (! ISVIEW(_mode))
+        save(false);
     }
     else if (so.lastError().type() != QSqlError::NoError)
     {
@@ -2554,6 +2588,7 @@ void salesOrder::populate()
                 "       COALESCE(quhead_saletype_id,-1) as quhead_saletype_id,"
                 "       cust_ffshipto, cust_blanketpos,"
                 "       COALESCE(quhead_misc_accnt_id,-1) AS quhead_misc_accnt_id, "
+                "       COALESCE(quhead_prj_id,-1) AS quhead_prj_id, "
                 "       COALESCE(quhead_ophead_id,-1) AS quhead_ophead_id, "
                 "       CASE WHEN quhead_status IN ('O','') THEN 'Open' "
                 "         ELSE CASE WHEN quhead_status ='C' THEN 'Converted' "
@@ -2571,6 +2606,7 @@ void salesOrder::populate()
                 "       COALESCE(quhead_saletype_id,-1) as quhead_saletype_id,"
                 "       TRUE AS cust_ffshipto, NULL AS cust_blanketpos,"
                 "       COALESCE(quhead_misc_accnt_id, -1) AS quhead_misc_accnt_id, "
+                "       COALESCE(quhead_prj_id,-1) AS quhead_prj_id, "
                 "       COALESCE(quhead_ophead_id,-1) AS quhead_ophead_id, "
                 "       CASE WHEN quhead_status IN ('O','') THEN 'Open' "
                 "         ELSE CASE WHEN quhead_status ='C' THEN 'Converted' "
@@ -2661,6 +2697,7 @@ void salesOrder::populate()
       }
 
       _shipTo->setId(qu.value("quhead_shipto_id").toInt());
+      _shipTo->setCustid(_cust->id());
       _ignoreSignals=false;
 
       if (_mode == cViewQuote)
@@ -2697,7 +2734,8 @@ void salesOrder::populate()
       sFillItemList();
       emit populated();
       // TODO - a partial save is not saving everything
-      save(false);
+      if (! ISVIEW(_mode))
+        save(false);
     }
     else if (qu.lastError().type() != QSqlError::NoError)
     {
@@ -2713,9 +2751,7 @@ void salesOrder::sFillItemList()
   if (ISORDER(_mode))
     fillSales.prepare( "SELECT COALESCE(getSoSchedDate(:head_id),:ship_date) AS shipdate;" );
   else
-    fillSales.prepare( "SELECT COALESCE(MIN(quitem_scheddate),:ship_date) AS shipdate "
-               "FROM quitem "
-               "WHERE (quitem_quhead_id=:head_id);" );
+    fillSales.prepare( "SELECT COALESCE(getQuoteSchedDate(:head_id),:ship_date) AS shipdate;" );
 
   fillSales.bindValue(":head_id", _soheadid);
   fillSales.bindValue(":ship_date", _shipDate->date());
@@ -2785,39 +2821,11 @@ void salesOrder::sFillItemList()
   }
   else if (ISQUOTE(_mode))
   {
-    XSqlQuery fl;
-    fl.prepare( "SELECT quitem_id,"
-                "       quitem_linenumber AS f_linenumber,"
-                "       0 AS coitem_subnumber, item_type,"
-                "       item_number, (item_descrip1 || ' ' || item_descrip2) AS description,"
-                "       warehous_code, '' AS enhanced_status,"
-                "       quitem_scheddate AS coitem_scheddate,"
-                "       quom.uom_name AS qty_uom,"
-                "       quitem_qtyord AS coitem_qtyord,"
-                "       0 AS qtyshipped, 0 AS qtyatshipping, 0 AS balance,"
-                "       puom.uom_name AS price_uom,"
-                "       quitem_price AS coitem_price,"
-                "       ROUND((quitem_qtyord * quitem_qty_invuomratio) *"
-                "             (quitem_price / quitem_price_invuomratio),2) AS extprice,"
-                "       quitem_custprice AS coitem_custprice,"
-                "       CASE WHEN (quitem_custpn != '') THEN quitem_custpn "
-                "       ELSE item_number "
-                "       END AS item_number_cust, "
-                "       'qty' AS coitem_qtyord_xtnumericrole,"
-                "       'qty' AS qtyshipped_xtnumericrole,"
-                "       'qty' AS balance_xtnumericrole,"
-                "       'qty' AS qtyatshipping_xtnumericrole,"
-                "       'salesprice' AS coitem_price_xtnumericrole,"
-                "       'curr' AS extprice_xtnumericrole "
-                "  FROM item, uom AS quom, uom AS puom,"
-                "       quitem LEFT OUTER JOIN (itemsite JOIN whsinfo ON (itemsite_warehous_id=warehous_id)) ON (quitem_itemsite_id=itemsite_id) "
-                " WHERE ( (quitem_item_id=item_id)"
-                "   AND   (quitem_qty_uom_id=quom.uom_id)"
-                "   AND   (quitem_price_uom_id=puom.uom_id)"
-                "   AND   (quitem_quhead_id=:quhead_id) ) "
-                "ORDER BY quitem_linenumber;" );
-    fl.bindValue(":quhead_id", _soheadid);
-    fl.exec();
+    MetaSQLQuery mql = mqlLoad("quoteItems", "list");
+    
+    ParameterList params;
+    params.append("quhead_id", _soheadid);
+    XSqlQuery fl = mql.toQuery(params);
     _cust->setReadOnly(fl.size() || !ISNEW(_mode));
     _soitem->populate(fl);
     if (fl.lastError().type() != QSqlError::NoError)
@@ -3032,25 +3040,9 @@ bool salesOrder::deleteForCancel()
     }
   }
 
-  if (cView != _mode && _locked)
-  {
-    query.prepare("SELECT pg_advisory_unlock(oid::integer, :sohead_id) AS result "
-                  "FROM pg_class "
-                  "WHERE relname=:table;");
-    query.bindValue(":sohead_id", _soheadid);
-    if (ISORDER(_mode))
-      query.bindValue(":table", "cohead");
-    else
-      query.bindValue(":table", "quhead");
-    query.exec();
-    if (query.first() && !query.value("result").toBool())
-        systemError(this, tr("Could not release this Sales Order record."),
-                  __FILE__, __LINE__);
-    else if (query.lastError().type() != QSqlError::NoError)
-        systemError(this, query.lastError().databaseText(), __FILE__, __LINE__);
-    else
-      _locked=false;
-  }
+  if (! _lock.release())
+    ErrorReporter::error(QtCriticalMsg, this, tr("Locking Error"),
+                         _lock.lastError(), __FILE__, __LINE__);
 
   return true;
 }
@@ -3067,27 +3059,14 @@ void salesOrder::sClear()
 void salesOrder::clear()
 {
   XSqlQuery clearSales;
-  if (cView != _mode && _locked)
-  {
-    clearSales.prepare("SELECT pg_advisory_unlock(oid::integer, :sohead_id) AS result "
-              "FROM pg_class "
-              "WHERE relname=:table;");
-    clearSales.bindValue(":sohead_id", _soheadid);
-    if (ISORDER(_mode))
-      clearSales.bindValue(":table", "cohead");
-    else
-      clearSales.bindValue(":table", "quhead");
-    clearSales.exec();
-    if (clearSales.first() && !clearSales.value("result").toBool())
-      systemError(this, tr("Could not release this Sales Order record."),
-                  __FILE__, __LINE__);
-    else if (clearSales.lastError().type() != QSqlError::NoError)
-      systemError(this, clearSales.lastError().databaseText(), __FILE__, __LINE__);
-    else
-      _locked=false;
-  }
+  if (! _lock.release())
+    ErrorReporter::error(QtCriticalMsg, this, tr("Locking Error"),
+                         _lock.lastError(), __FILE__, __LINE__);
 
-  _salesOrderInformation->setCurrentIndex(0);
+  if(_metrics->boolean("DefaultSOLineItemsTab"))
+    _salesOrderInformation->setCurrentIndex(1);
+  else
+    _salesOrderInformation->setCurrentIndex(0);
 
   _orderNumber->setEnabled(TRUE);
   _orderNumberGen = 0;
@@ -3484,6 +3463,7 @@ bool salesOrder::deleteSalesOrder(int pId, QWidget *parent)
                                   CreditCardProcessor::errorMsg());
           else
           {
+            // TODO: must we loop and generate a distinct credit for each ccpay?
             XSqlQuery ccq;
             ccq.prepare("SELECT ccpay_id, ccpay_ccard_id, ccpay_curr_id,"
                         "       SUM(ccpay_amount     * sense) AS amount,"
@@ -3497,12 +3477,17 @@ bool salesOrder::deleteSalesOrder(int pId, QWidget *parent)
                         "                  WHEN ccpay_status = 'R' THEN -1"
                         "             END AS sense,"
                         "             ccpay_amount,"
-                        "             COALESCE(ccpay_r_tax::NUMERIC, 0) AS ccpay_r_tax,"
-                        "             COALESCE(ccpay_r_shipping::NUMERIC, 0) AS ccpay_r_shipping "
-                        "      FROM ccpay, payco "
-                        "      WHERE ((ccpay_id=payco_ccpay_id)"
-                        "        AND  (ccpay_status IN ('C', 'R'))"
-                        "        AND  (payco_cohead_id=:coheadid)) "
+                        "             CASE WHEN ccpay_r_tax = ''    THEN 0"
+                        "                  WHEN ccpay_r_tax IS NULL THEN 0"
+                        "                  ELSE CAST(ccpay_r_tax AS NUMERIC)"
+                        "             END AS ccpay_r_tax,"
+                        "             CASE WHEN ccpay_r_shipping = ''    THEN 0"
+                        "                  WHEN ccpay_r_shipping IS NULL THEN 0"
+                        "                  ELSE CAST(ccpay_r_shipping AS NUMERIC)"
+                        "             END AS ccpay_r_shipping"
+                        "      FROM ccpay JOIN payco ON (ccpay_id=payco_ccpay_id)"
+                        "      WHERE ((ccpay_status IN ('C', 'R'))"
+                        "        AND  (payco_cohead_id=:coheadid))"
                         "      ) AS dummy "
                         "GROUP BY ccpay_id, ccpay_ccard_id, ccpay_curr_id;");
             ccq.bindValue(":coheadid", pId);
@@ -4570,7 +4555,7 @@ void salesOrder::sEnterCashPayment()
   }
   
   QString _cashrcptnumber;
-  int _cashrcptid;
+  int _cashrcptid = -1;
 
   cashsave.exec("SELECT fetchCashRcptNumber() AS number, NEXTVAL('cashrcpt_cashrcpt_id_seq') AS cashrcpt_id;");
   if (cashsave.first())

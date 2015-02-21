@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -13,6 +13,7 @@
 #include <QAction>
 #include <QMenu>
 
+#include "errorReporter.h"
 #include "xtreewidget.h"
 
 dspFrozenItemSites::dspFrozenItemSites(QWidget* parent, const char*, Qt::WFlags fl)
@@ -52,6 +53,9 @@ void dspFrozenItemSites::sThaw()
   qq.prepare("SELECT thawItemsite(:itemsite_id) AS result;");
   qq.bindValue(":itemsite_id", list()->id());
   qq.exec();
+  if (ErrorReporter::error(QtCriticalMsg, this, tr("Thaw Item Site"),
+                           qq, __FILE__, __LINE__))
+    return;
 
   sFillList();
 }

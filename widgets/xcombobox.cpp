@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -276,6 +276,7 @@ void XComboBox::init()
   insertEditor(TaxTypes,"taxTypes","MaintainTaxTypes");
   insertEditor(Terms,"terms","MaintainTerms");
   insertEditor(TaskCommentTypes,"commentTypes","MaintainCommentTypes");
+  //insertEditor(TimeAttendanceCommentTypes,"commentTypes","MaintainCommentTypes");
   insertEditor(TodoItemCommentTypes,"commentTypes","MaintainCommentTypes");
   insertEditor(TransferOrderCommentTypes,"commentTypes","MaintainCommentTypes");
   insertEditor(TransferOrderItemCommentTypes,"commentTypes","MaintainCommentTypes");
@@ -900,6 +901,14 @@ void XComboBox::setType(XComboBoxTypes pType)
                   "WHERE (source_name='TA')"
                   "ORDER BY cmnttype_order, cmnttype_name;" );
       break;
+      
+     case TimeAttendanceCommentTypes:
+      query.exec( "SELECT cmnttype_id, cmnttype_name, cmnttype_name "
+                  "FROM cmnttype JOIN cmnttypesource ON (cmnttypesource_cmnttype_id=cmnttype_id)"
+                  "              JOIN source ON (source_id=cmnttypesource_source_id) "
+                  "WHERE (source_name='TATC')"
+                  "ORDER BY cmnttype_order, cmnttype_name;" );
+      break;     
 
     case TodoItemCommentTypes:
       query.exec( "SELECT cmnttype_id, cmnttype_name, cmnttype_name "

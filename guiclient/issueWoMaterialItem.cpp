@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -10,6 +10,7 @@
 
 #include "issueWoMaterialItem.h"
 
+#include <QSqlError>
 #include <QVariant>
 #include <QMessageBox>
 #include <QValidator>
@@ -34,7 +35,12 @@ issueWoMaterialItem::issueWoMaterialItem(QWidget* parent, const char* name, bool
   omfgThis->inputManager()->notify(cBCItem, this, this, SLOT(sCatchItemid(int)));
   omfgThis->inputManager()->notify(cBCItemSite, this, this, SLOT(sCatchItemsiteid(int)));
 
-  _wo->setType(cWoExploded | cWoIssued | cWoReleased);
+// Issue #22778 - Add hidden metric to allow issuing to Exploded WOs
+  if (_metrics->boolean("IssueToExplodedWO"))
+    _wo->setType(cWoExploded | cWoIssued | cWoReleased);
+  else
+    _wo->setType(cWoIssued | cWoReleased);
+
   _qtyToIssue->setValidator(omfgThis->qtyVal());
   _beforeQty->setPrecision(omfgThis->transQtyVal());
   _afterQty->setPrecision(omfgThis->transQtyVal());
@@ -189,6 +195,30 @@ void issueWoMaterialItem::sIssue()
       return;
     }
 
+    if (_metrics->boolean("LotSerialControl"))
+    {
+      // Insert special pre-assign records for the lot/serial#
+      // so they are available when the material is returned
+      XSqlQuery lsdetail;
+      lsdetail.prepare("INSERT INTO lsdetail "
+                       "            (lsdetail_itemsite_id, lsdetail_created, lsdetail_source_type, "
+                       "             lsdetail_source_id, lsdetail_source_number, lsdetail_ls_id, lsdetail_qtytoassign) "
+                       "SELECT invhist_itemsite_id, NOW(), 'IM', "
+                       "       :orderitemid, invhist_ordnumber, invdetail_ls_id, (invdetail_qty * -1.0) "
+                       "FROM invhist JOIN invdetail ON (invdetail_invhist_id=invhist_id) "
+                       "WHERE (invhist_series=:itemlocseries)"
+                       "  AND (COALESCE(invdetail_ls_id, -1) > 0);");
+      lsdetail.bindValue(":orderitemid", _womatl->id());
+      lsdetail.bindValue(":itemlocseries", issueIssue.value("result").toInt());
+      lsdetail.exec();
+      if (lsdetail.lastError().type() != QSqlError::NoError)
+      {
+        rollback.exec();
+        systemError(this, lsdetail.lastError().databaseText(), __FILE__, __LINE__);
+        return;
+      }
+    }
+
     issueIssue.exec("COMMIT;");
   }
   else
@@ -228,7 +258,7 @@ void issueWoMaterialItem::sSetQOH(int pWomatlid)
       _qtyToIssue->setDouble(_womatl->qtyIssued() * -1);
     
     XSqlQuery qoh;
-    qoh.prepare( "SELECT itemuomtouom(itemsite_item_id, NULL, womatl_uom_id, itemsite_qtyonhand) AS qtyonhand,"
+    qoh.prepare( "SELECT itemuomtouom(itemsite_item_id, NULL, womatl_uom_id, qtyAvailable(itemsite_id)) AS availableqoh,"
                  "       uom_name "
                  "  FROM womatl, itemsite, uom"
                  " WHERE((womatl_itemsite_id=itemsite_id)"
@@ -239,7 +269,7 @@ void issueWoMaterialItem::sSetQOH(int pWomatlid)
     if (qoh.first())
     {
       _uomQty->setText(qoh.value("uom_name").toString());
-      _cachedQOH = qoh.value("qtyonhand").toDouble();
+      _cachedQOH = qoh.value("availableqoh").toDouble();
       _beforeQty->setDouble(_cachedQOH);
     }
     else

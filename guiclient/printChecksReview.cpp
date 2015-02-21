@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -28,7 +28,7 @@ printChecksReview::printChecksReview(QWidget* parent, const char* name, bool mod
   connect(_unmark,    SIGNAL(clicked()), this, SLOT(sUnmark()));
   connect(_voided,    SIGNAL(clicked()), this, SLOT(sMarkVoided()));
 
-  _checks->addColumn(tr("Check Number"),          -1, Qt::AlignLeft );
+  _checks->addColumn(tr("Payment Number"),        -1, Qt::AlignLeft );
   _checks->addColumn(tr("Action"),       _itemColumn, Qt::AlignLeft );
 }
 

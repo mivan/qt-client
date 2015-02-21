@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -69,6 +69,8 @@ enum SetResponse itemGroup::set(const ParameterList &pParams)
       itemet.exec("SELECT NEXTVAL('itemgrp_itemgrp_id_seq') AS itemgrp_id;");
       if (itemet.first())
         _itemgrpid = itemet.value("itemgrp_id").toInt();
+
+      sFillList();
 
       connect(_itemgrpitem, SIGNAL(valid(bool)), _delete, SLOT(setEnabled(bool)));
       connect(_itemgrpparent, SIGNAL(valid(bool)), _deleteParent, SLOT(setEnabled(bool)));
@@ -277,7 +279,7 @@ void itemGroup::sNewParent()
                     "       itemgrp_catalog AS catalog, "
                     "       0 AS depth, array[itemgrp_id] AS path, false AS cycle "
                     "FROM itemgrp WHERE (itemgrp_id=:itemgrp_id) "
-                    "UNION "
+                    "UNION ALL "
                     "SELECT itemgrp_id AS id, "
                     "       itemgrp_name AS name, "
                     "       itemgrp_descrip AS descrip, "
@@ -285,7 +287,7 @@ void itemGroup::sNewParent()
                     "       (depth+1) AS depth, (path || itemgrp_id) AS path, (itemgrp_id = any(path)) AS cycle "
                     "FROM indentedgroups JOIN itemgrpitem ON (itemgrpitem_itemgrp_id=id) "
                     "  JOIN itemgrp ON (itemgrp_id=itemgrpitem_item_id AND itemgrpitem_item_type='G') "
-                    "WHERE (itemgrp_id=:item_id) "
+                    "WHERE (NOT cycle) AND (itemgrp_id=:item_id) "
                     ") "
                     "SELECT id, name, descrip, catalog, depth, path, cycle "
                     "FROM indentedgroups "

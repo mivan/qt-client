@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -22,6 +22,8 @@
 
 #include "guiclient.h"
 #include "cashReceipt.h"
+#include "errorReporter.h"
+#include "getGLDistDate.h"
 #include "storedProcErrorLookup.h"
 
 cashReceiptsEditList::cashReceiptsEditList(QWidget* parent, const char* name, Qt::WFlags fl)
@@ -156,6 +158,22 @@ void cashReceiptsEditList::sDelete()
 void cashReceiptsEditList::sPost()
 {
   XSqlQuery cashPost;
+  bool changeDate = false;
+  QDate newDate = QDate();
+  
+  if (_privileges->check("ChangeCashRecvPostDate"))
+  {
+    getGLDistDate newdlg(this, "", TRUE);
+    newdlg.sSetDefaultLit(tr("Distribution Date"));
+    if (newdlg.exec() == XDialog::Accepted)
+    {
+      newDate = newdlg.date();
+      changeDate = (newDate.isValid());
+    }
+    else
+      return;
+  }
+  
   int journalNumber = -1;
 
   XSqlQuery tx;
@@ -169,8 +187,29 @@ void cashReceiptsEditList::sPost()
     return;
   }
 
+  XSqlQuery setDate;
+  setDate.prepare("UPDATE cashrcpt SET cashrcpt_distdate=:distdate,"
+                  "                    cashrcpt_applydate=CASE WHEN (cashrcpt_applydate < :distdate) THEN :distdate"
+                  "                                            ELSE cashrcpt_applydate END "
+                  "WHERE cashrcpt_id=:cashrcpt_id;");
+  
   QList<XTreeWidgetItem*> selected = _cashrcpt->selectedItems();
   XTreeWidgetItem *cursor = 0;
+  
+  for (int i = 0; i < selected.size(); i++)
+  {
+    int id = ((XTreeWidgetItem*)(selected[i]))->id();
+    
+    if (changeDate)
+    {
+      setDate.bindValue(":distdate",    newDate);
+      setDate.bindValue(":cashrcpt_id", id);
+      setDate.exec();
+      ErrorReporter::error(QtCriticalMsg, this, tr("Changing Dist. Date"),
+                           setDate, __FILE__, __LINE__);
+    }
+  }
+  
   for (int i = 0; i < selected.size(); i++)
   {
     cursor = (XTreeWidgetItem*)selected.at(i);

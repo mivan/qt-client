@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -21,8 +21,10 @@
 #include "dspRunningAvailability.h"
 #include "dspSubstituteAvailabilityByItem.h"
 #include "inputManager.h"
+#include "printPackingList.h"
 #include "purchaseOrder.h"
 #include "reserveSalesOrderItem.h"
+#include "salesOrder.h"
 #include "storedProcErrorLookup.h"
 #include "workOrder.h"
 
@@ -42,7 +44,7 @@ dspInventoryAvailabilityByCustomerType::dspInventoryAvailabilityByCustomerType(Q
   list()->addColumn(tr("Item Number"),     _itemColumn, Qt::AlignLeft,  true, "item_number");
   list()->addColumn(tr("Description"),              -1, Qt::AlignLeft,  true, "descrip");
   list()->addColumn(tr("UOM"),              _uomColumn, Qt::AlignCenter,true, "uom_name");
-  list()->addColumn(tr("QOH"),              _qtyColumn, Qt::AlignRight, true, "qoh");
+  list()->addColumn(tr("Available QOH"),    _qtyColumn, Qt::AlignRight, true, "qoh");
   list()->addColumn(tr("This Alloc."),      _qtyColumn, Qt::AlignRight, true, "sobalance");
   list()->addColumn(tr("Total Alloc."),     _qtyColumn, Qt::AlignRight, true, "allocated");
   list()->addColumn(tr("Orders"),           _qtyColumn, Qt::AlignRight, true, "ordered");
@@ -110,7 +112,23 @@ void dspInventoryAvailabilityByCustomerType::sPopulateMenu(QMenu *pMenu,  QTreeW
   
   if (list()->altId() == -2)
   {
+    menuItem = pMenu->addAction(tr("Edit Order..."), this, SLOT(sEditOrder()));
+    if (!_privileges->check("MaintainSalesOrders"))
+      menuItem->setEnabled(false);
+    
+    menuItem = pMenu->addAction(tr("View Order..."), this, SLOT(sViewOrder()));
+    if ((!_privileges->check("MaintainSalesOrders")) && (!_privileges->check("ViewSalesOrders")))
+      menuItem->setEnabled(false);
+    
+    pMenu->addSeparator();
+    
+    menuItem = pMenu->addAction(tr("Print Packing List..."), this, SLOT(sPrintPackingList()));
+    if (!_privileges->check("PrintPackingLists"))
+      menuItem->setEnabled(false);
+    
     menuItem = pMenu->addAction(tr("Add to Packing List Batch"), this, SLOT(sAddToPackingListBatch()));
+    if (!_privileges->check("MaintainPackingListBatch"))
+      menuItem->setEnabled(false);
   }
   else if (list()->altId() != -1)
   {
@@ -359,6 +377,16 @@ void dspInventoryAvailabilityByCustomerType::sShowReservations()
   omfgThis->handleNewWindow(newdlg);
 }
 
+void dspInventoryAvailabilityByCustomerType::sEditOrder()
+{
+  salesOrder::editSalesOrder(list()->id(), false);
+}
+
+void dspInventoryAvailabilityByCustomerType::sViewOrder()
+{
+  salesOrder::viewSalesOrder(list()->id());
+}
+
 void dspInventoryAvailabilityByCustomerType::sAddToPackingListBatch()
 {
   XSqlQuery qq;
@@ -367,3 +395,18 @@ void dspInventoryAvailabilityByCustomerType::sAddToPackingListBatch()
   qq.exec();
   sFillList();
 }
+
+void dspInventoryAvailabilityByCustomerType::sPrintPackingList()
+{
+  QList<XTreeWidgetItem*> selected = list()->selectedItems();
+  for (int i = 0; i < selected.size(); i++)
+  {
+    ParameterList params;
+    params.append("sohead_id", ((XTreeWidgetItem*)(selected[i]))->id());
+    
+    printPackingList newdlg(this, "", true);
+    newdlg.set(params);
+    newdlg.exec();
+  }
+}
+

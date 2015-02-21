@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -66,7 +66,7 @@ selectOrderForBilling::selectOrderForBilling(QWidget* parent, const char* name, 
   _soitem->addColumn(tr("Shipped"),    _qtyColumn,   Qt::AlignRight , true, "coitem_qtyshipped" );
   _soitem->addColumn(tr("Returned"),   _qtyColumn,   Qt::AlignRight , true, "coitem_qtyreturned" );
   _soitem->addColumn(tr("Uninvoiced"), _qtyColumn,   Qt::AlignRight , true, "qtyatship" );
-  _soitem->addColumn(tr("Selected"),   _qtyColumn,   Qt::AlignRight , true, "qtytobill" );
+  _soitem->addColumn(tr("Approved"),   _qtyColumn,   Qt::AlignRight , true, "qtytobill" );
   _soitem->addColumn(tr("Extended"),   _moneyColumn, Qt::AlignRight , true, "extended" );
   _soitem->addColumn(tr("Close"),      _ynColumn,    Qt::AlignCenter, true, "toclose");
 
@@ -169,7 +169,7 @@ void selectOrderForBilling::sSave()
   {
     QMessageBox::information(this, tr("No Ship Date Entered"),
                              tr("<p>You must enter a Ship Date before "
-				"selecting this order for billing."  ) );
+				"approving this order for billing."  ) );
 
     _shipDate->setFocus();
     return;
@@ -601,8 +601,7 @@ void selectOrderForBilling::sTaxZoneChanged()
   {
     XSqlQuery taxq;
     taxq.prepare("UPDATE cobmisc SET "
-      "  cobmisc_taxzone_id=:taxzone_id, "
-      "  cobmisc_freight=:freight "
+      "  cobmisc_taxzone_id=:taxzone_id "
       "WHERE (cobmisc_id=:cobmisc_id) ");
     if (_taxZone->id() != -1)
       taxq.bindValue(":taxzone_id", _taxZone->id());

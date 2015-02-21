@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -419,13 +419,19 @@ GUIClient::GUIClient(const QString &pDatabaseURL, const QString &pUsername)
 
   // load plugins before building the menus
   // TODO? add a step later to add to the menus from the plugins?
-  QDir pluginsDir(QApplication::applicationDirPath());
-  while (! pluginsDir.exists("plugins") && pluginsDir.cdUp())
-    ;
-  if (pluginsDir.cd("plugins"))
+  QStringList checkForPlugins;
+  checkForPlugins << QApplication::applicationDirPath()
+                  << QString("/usr/lib/postbooks");
+  foreach (QString dirname, checkForPlugins)
   {
-    foreach (QString fileName, pluginsDir.entryList(QDir::Files))
-      new QPluginLoader(pluginsDir.absoluteFilePath(fileName), this);
+    QDir pluginsDir(dirname);
+    while (! pluginsDir.exists("plugins") && pluginsDir.cdUp())
+      ;
+    if (pluginsDir.cd("plugins"))
+    {
+      foreach (QString fileName, pluginsDir.entryList(QDir::Files))
+        new QPluginLoader(pluginsDir.absoluteFilePath(fileName), this);
+    }
   }
 
 //  Populate the menu bar
@@ -618,11 +624,12 @@ void GUIClient::setWindowTitle()
                                .arg(_Version)
                                .arg(_GetWindowTitle.value("username").toString()) );
     else
-      QMainWindow::setWindowTitle( tr("%1 %2 - %3 on %4/%5 AS %6")
+      QMainWindow::setWindowTitle( tr("%1 %2 - %3 on %4:%5/%6 AS %7")
                                .arg(_Name)
                                .arg(_Version)
                                .arg(name)
                                .arg(server)
+                               .arg(port)
                                .arg(database)
                                .arg(_GetWindowTitle.value("username").toString()) );
   }
@@ -1341,6 +1348,7 @@ QString translationFile(QString localestr, const QString component, QString &ver
   QStringList paths;
 //qDebug() << QDesktopServices::storageLocation(QDesktopServices::DataLocation);
   paths << QDesktopServices::storageLocation(QDesktopServices::DataLocation);
+  paths << "/usr/lib/postbooks/dict";
   paths << "dict";
   paths << "";
   paths << "../dict";
@@ -2123,7 +2131,9 @@ void GUIClient::hunspell_initialize()
 {
     _spellReady = false;
     QString langName = QLocale::languageToString(QLocale().language());
-    QString appPath = QApplication::applicationDirPath();
+    QString appPath("/usr/lib/postbooks");
+    if (! QFile::exists(appPath))
+      appPath = QApplication::applicationDirPath();
     QString fullPathWithoutExt = appPath + "/" + langName;
     QFile affFile(fullPathWithoutExt + tr(".aff"));
     QFile dicFile(fullPathWithoutExt + tr(".dic"));

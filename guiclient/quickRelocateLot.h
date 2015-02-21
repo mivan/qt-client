@@ -28,7 +28,9 @@ public:
     ~quickRelocateLot();
 
 public slots:
+    void sFillList();
     void sPost();
+    void clearFields();
 
 protected slots:
     virtual void languageChange();

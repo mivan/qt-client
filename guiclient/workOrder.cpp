@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -139,7 +139,7 @@ workOrder::workOrder(QWidget* parent, const char* name, Qt::WFlags fl)
   _woIndentedList->addColumn(tr("Issued"),          _qtyColumn,     Qt::AlignRight     , true,   "qtyiss");
   _woIndentedList->addColumn(tr("Scrap"),           _prcntColumn,   Qt::AlignRight     , false,  "scrap");
   _woIndentedList->addColumn(tr("Received"),        _qtyColumn,     Qt::AlignRight     , true,   "qtyrcv");
-  _woIndentedList->addColumn(tr("On hand"),         _qtyColumn,     Qt::AlignRight     , false,  "qoh");
+  _woIndentedList->addColumn(tr("Available QOH"),   _qtyColumn,     Qt::AlignRight     , false,  "qoh");
   _woIndentedList->addColumn(tr("Short"),           _qtyColumn,     Qt::AlignRight     , false,  "short");
   if (_metrics->boolean("Routings"))
   {
@@ -1583,14 +1583,14 @@ void workOrder::sDeleteMatl()
     if(_privileges->check("ReturnWoMaterials"))
     {
       if (QMessageBox::question(this, tr("W/O Material Requirement cannot be Deleted"),
-				tr("<p>This W/O Material Requirement cannot "
-				   "be deleted as it has has material issued "
-				   "to it. You must return this material to "
-				   "stock before you can delete this Material "
-				   "Requirement. Would you like to return this "
-				   "material to stock now?"  ),
-				QMessageBox::Yes,
-				QMessageBox::No | QMessageBox::Default) == QMessageBox::Yes)
+                                tr("<p>This W/O Material Requirement cannot "
+                                   "be deleted as it has has material issued "
+                                   "to it. You must return this material to "
+                                   "stock before you can delete this Material "
+                                   "Requirement. Would you like to return this "
+                                   "material to stock now?"  ),
+                                QMessageBox::Yes,
+                                QMessageBox::No | QMessageBox::Default) == QMessageBox::Yes)
       {
         ParameterList params;
         params.append("womatl_id", womatlid);
@@ -1602,8 +1602,8 @@ void workOrder::sDeleteMatl()
         populate();
 
         workDeleteMatl.prepare("SELECT womatl_qtyiss AS qtyissued "
-                  "FROM womatl "
-                  "WHERE (womatl_id=:womatl_id) ");
+                               "FROM womatl "
+                               "WHERE (womatl_id=:womatl_id) ");
         workDeleteMatl.bindValue(":womatl_id", womatlid);
         workDeleteMatl.exec();
         if (!workDeleteMatl.first() || workDeleteMatl.value("qtyissued").toInt() != 0)
@@ -1614,12 +1614,50 @@ void workOrder::sDeleteMatl()
     }
     else
     {
-      QMessageBox::critical( this, tr("W/O Material Requirement cannot be Deleted"),
-                             tr("<p>This W/O Material Requirement cannot be "
-				"deleted as it has material issued to it. "
-                                "You must return this material to stock before "
-				"you can delete this Material Requirement." ) );
+      QMessageBox::critical(this, tr("W/O Material Requirement cannot be Deleted"),
+                            tr("<p>This W/O Material Requirement cannot be "
+                               "deleted as it has material issued to it. "
+                               "You must return this material to stock before "
+                               "you can delete this Material Requirement." ) );
       return;
+    }
+  }
+
+  workDeleteMatl.prepare("SELECT wo_id AS woid "
+                         "FROM womatl JOIN wo ON (wo_ordtype='W' AND"
+                         "                        wo_ordid=womatl_wo_id AND"
+                         "                        wo_itemsite_id=womatl_itemsite_id) "
+                         "WHERE (womatl_id=:womatl_id) ");
+  workDeleteMatl.bindValue(":womatl_id", womatlid);
+  workDeleteMatl.exec();
+  if (workDeleteMatl.first())
+  {
+    int woid = workDeleteMatl.value("woid").toInt();
+    if (QMessageBox::question(this, tr("Child W/O Exists"),
+                              tr("<p>This W/O Material Requirement is "
+                                 "associated with a Child Work Order. "
+                                 "Would you like to delete this "
+                                 "Child Work Order now?"  ),
+                              QMessageBox::Yes,
+                              QMessageBox::No | QMessageBox::Default) == QMessageBox::Yes)
+    {
+      workDeleteMatl.prepare("SELECT deleteWo(:wo_id, TRUE) AS result;");
+      workDeleteMatl.bindValue(":wo_id", woid);
+      workDeleteMatl.exec();
+      if (workDeleteMatl.first())
+      {
+        int result = workDeleteMatl.value("result").toInt();
+        if (result < 0)
+        {
+          systemError(this, storedProcErrorLookup("deleteWo", result), __FILE__, __LINE__);
+          return;
+        }
+      }
+      else if (workDeleteMatl.lastError().type() != QSqlError::NoError)
+      {
+        systemError(this, workDeleteMatl.lastError().databaseText(), __FILE__, __LINE__);
+        return;
+      }
     }
   }
 
@@ -1640,9 +1678,10 @@ void workOrder::sDeleteMatl()
     systemError(this, workDeleteMatl.lastError().databaseText(), __FILE__, __LINE__);
     return;
   }
+  
   workDeleteMatl.prepare("SELECT womatl_wo_id AS woid "
-                  "FROM womatl "
-                  "WHERE (womatl_id=:womatl_id) ");
+                         "FROM womatl "
+                         "WHERE (womatl_id=:womatl_id) ");
   workDeleteMatl.bindValue(":womatl_id", womatlid);
   workDeleteMatl.exec();
   if (workDeleteMatl.first())
@@ -1781,6 +1820,7 @@ void workOrder::sSubstituteMatl()
 void workOrder::sPopulateMenu(QMenu *pMenu,  QTreeWidgetItem *selected)
 {
   QString  status(selected->text(3));
+  double qtyiss = _woIndentedList->rawValue("qtyiss").toDouble();
   QAction *menuItem;
 
   //Check if row is a work order and id is vaild
@@ -1948,7 +1988,7 @@ void workOrder::sPopulateMenu(QMenu *pMenu,  QTreeWidgetItem *selected)
             menuItem->setEnabled(false);
       }
       
-      if (status == "O" || status == "E")
+      if ((status == "O" || status == "E") && qtyiss == 0.0)
       {
           menuItem = pMenu->addAction(tr("Substitute..."), this, SLOT(sSubstituteMatl()));
           if (!_privileges->check("MaintainWoMaterials"))

@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -133,7 +133,7 @@ void postInvoices::sPost()
     {
       rollback.exec();
       QMessageBox::critical( this, tr("Cannot Post one or more Invoices"),
-                             tr( "The G/L Account Assignments for one or more of the Invoices that you are trying to post are not\n"
+                             tr( "The Ledger Account Assignments for one or more of the Invoices that you are trying to post are not\n"
                                  "configured correctly.  Because of this, G/L Transactions cannot be posted for these Invoices.\n"
                                  "You must contact your Systems Administrator to have this corrected before you may\n"
                                  "post these Invoices." ) );

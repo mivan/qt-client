@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -179,7 +179,7 @@ void returnAuthCheck::populate()
   XSqlQuery returnpopulate;
   returnpopulate.prepare("SELECT cust_id,cust_name,cmhead_number,cmhead_curr_id, "
 	        "'Return Authorization ' || rahead_number::text AS memo, "
-			"'Applied Against Credit Memo ' || cmhead_number::text AS note, "
+			"'Applied Against Return ' || cmhead_number::text AS note, "
 			"aropen_id,aropen_amount "
 			"FROM rahead,cmhead,custinfo,aropen "
 			"WHERE ((cmhead_cust_id=cust_id) "

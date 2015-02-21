@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -91,15 +91,15 @@ void selectPayment::sSave()
   XSqlQuery selectSave;
   if (_selected->isZero())
   {
-    QMessageBox::warning( this, tr("Cannot Select for Payment"),
+    QMessageBox::warning( this, tr("Cannot Approve for Payment"),
       tr("<p>You must specify an amount greater than zero. "
-         "If you want to clear this selection you may do so "
+         "If you want to clear this approval you may do so "
          "from the screen you selected this payment from.") );
     return;
   }
   else if ((_selected->localValue() + _discountAmount->localValue()) > (_amount->localValue() + 0.0000001))
   {
-    QMessageBox::warning( this, tr("Cannot Select for Payment"),
+    QMessageBox::warning( this, tr("Cannot Approve for Payment"),
       tr("You must specify an amount smaller than or equal to the Balance.") );
     _selected->setFocus();
     return;
@@ -107,7 +107,7 @@ void selectPayment::sSave()
 
   if (_bankaccnt->id() == -1)
   {
-    QMessageBox::warning( this, tr("Cannot Select for Payment"),
+    QMessageBox::warning( this, tr("Cannot Approve for Payment"),
                           tr("<p>You must select a Bank Account from which "
 			     "this Payment is to be paid.") );
     _bankaccnt->setFocus();

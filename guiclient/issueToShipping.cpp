@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -40,6 +40,7 @@ issueToShipping::issueToShipping(QWidget* parent, const char* name, Qt::WFlags f
   connect(_bcFind,      SIGNAL(clicked()),                              this,         SLOT(sBcFind()));
   connect(_soitem,      SIGNAL(itemSelectionChanged()),                 this,         SLOT(sHandleButtons()));
   connect(_soitem,      SIGNAL(populateMenu(QMenu*,QTreeWidgetItem *)), this,         SLOT(sPopulateMenu(QMenu *)));
+  connect(_warehouse,   SIGNAL(newID(int)),                             this,         SLOT(sFillList()));
 
   _order->setAllowedStatuses(OrderLineEdit::Open);
   _order->setAllowedTypes(OrderLineEdit::Sales |
@@ -90,9 +91,16 @@ issueToShipping::issueToShipping(QWidget* parent, const char* name, Qt::WFlags f
   _soitem->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
   _order->setFromSitePrivsEnforced(TRUE);
+  _order->setFocus();
 
   _bcQty->setValidator(omfgThis->qtyVal());
 
+  if (!_metrics->boolean("MultiWhs"))
+  {
+    _warehouseLit->hide();
+    _warehouse->hide();
+  }
+  
   if(_metrics->boolean("EnableSOReservations"))
   {
     _requireInventory->setChecked(true);
@@ -618,17 +626,13 @@ void issueToShipping::sReturnStock()
 void issueToShipping::sShip()
 {
   XSqlQuery issueShip;
-  issueShip.prepare( "SELECT shiphead_id "
-             "FROM shiphead JOIN shipitem ON (shipitem_shiphead_id=shiphead_id) "
-             "WHERE ((NOT shiphead_shipped)"
-             "  AND  (shiphead_order_type=:ordertype)"
-             "  AND  (shiphead_order_id=:order_id) ) "
-             "LIMIT 1;" );
+  issueShip.prepare( "SELECT getOpenShipmentId(:ordertype, :order_id, :warehous_id) AS shiphead_id;" );
   issueShip.bindValue(":order_id",  _order->id());
   issueShip.bindValue(":ordertype", _order->type());
+  issueShip.bindValue(":warehous_id", _warehouse->id());
 
   issueShip.exec();
-  if (issueShip.first())
+  if ( (issueShip.first()) && (issueShip.value("shiphead_id").toInt() > 0) )
   {
     // Reset _order so that lock is released prior to shipping and potentially auto receiving
     // to avoid locking conflicts
@@ -753,31 +757,36 @@ void issueToShipping::sFillList()
   }
   else if (_order->isSO())
   {
-    issueFillList.prepare( "SELECT cohead_holdtype "
-               "FROM cohead "
-               "WHERE (cohead_id=:sohead_id);" );
+    issueFillList.prepare( "SELECT cohead_holdtype,"
+                           "       (calcSalesOrderAmt(cohead_id) - "
+                           "       COALESCE(SUM(currToCurr(aropenalloc_curr_id, cohead_curr_id,"
+                           "                               aropenalloc_amount, cohead_orderdate)),0)) AS balance "
+                           "FROM cohead LEFT OUTER JOIN aropenalloc ON (aropenalloc_doctype='S' AND"
+                           "                                            aropenalloc_doc_id=cohead_id) "
+                           "WHERE (cohead_id=:sohead_id) "
+                           "GROUP BY cohead_holdtype, cohead_id;" );
     issueFillList.bindValue(":sohead_id", _order->id());
     issueFillList.exec();
     if (issueFillList.first())
     {
-      if (issueFillList.value("cohead_holdtype").toString() == "C")
+      if ( (issueFillList.value("cohead_holdtype").toString() == "C") && (issueFillList.value("balance").toDouble() > 0.0) )
       {
         QMessageBox::critical( this, tr("Cannot Issue Stock"),
-                               storedProcErrorLookup("issuetoshipping", -12));
+                              storedProcErrorLookup("issuetoshipping", -12));
         _order->setId(-1);
         _order->setFocus();
       }
       else if (issueFillList.value("cohead_holdtype").toString() == "P")
       {
         QMessageBox::critical( this, tr("Cannot Issue Stock"),
-                               storedProcErrorLookup("issuetoshipping", -13));
+                              storedProcErrorLookup("issuetoshipping", -13));
         _order->setId(-1);
         _order->setFocus();
       }
       else if (issueFillList.value("cohead_holdtype").toString() == "R")
       {
         QMessageBox::critical( this, tr("Cannot Issue Stock"),
-                               storedProcErrorLookup("issuetoshipping", -14));
+                              storedProcErrorLookup("issuetoshipping", -14));
         _order->setId(-1);
         _order->setFocus();
       }
@@ -808,6 +817,7 @@ void issueToShipping::sFillList()
   }
 
   listp.append("ordertype", _order->type());
+  listp.append("warehous_id", _warehouse->id());
 
   if (_metrics->boolean("EnableSOReservationsByLocation"))
     listp.append("includeReservations");

@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -527,7 +527,7 @@ void contact::sSave()
       QMessageBox::information(this, tr("Cannot make Contact inactive"),
                             tr("<p>You may not mark this Contact as not "
                                "Active when this person is a Contact "
-                               "for an active CRM Account, Customer, "
+                               "for an active Account, Customer, "
                                "Vendor, or Prospect."));
       return;
     }
@@ -674,7 +674,7 @@ void contact::sFillList()
   getp.append("billing",    tr("Billing Contact"));
   getp.append("cohead",     tr("Sales Order"));
   getp.append("correspond", tr("Correspondence Contact"));
-  getp.append("crmacct",    tr("CRM Account"));
+  getp.append("crmacct",    tr("Account"));
   getp.append("cust",       tr("Customer"));
   getp.append("emp",        tr("Employee"));
   getp.append("ophead",     tr("Opportunity"));
@@ -717,13 +717,13 @@ void contact::sDetachUse()
   {
     case 1:
       question = tr("Are you sure that you want to remove this Contact as "
-                    "the Primary Contact for this CRM Account?");
+                    "the Primary Contact for this Account?");
       detachq.prepare("UPDATE crmacct SET crmacct_cntct_id_1 = NULL "
                       "WHERE (crmacct_id=:id);");
       break;
     case 2:
       question = tr("Are you sure that you want to remove this Contact as "
-                    "the Secondary Contact for this CRM Account?");
+                    "the Secondary Contact for this Account?");
       detachq.prepare("UPDATE crmacct SET crmacct_cntct_id_2 = NULL "
                       "WHERE (crmacct_id=:id);");
       break;

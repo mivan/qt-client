@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -1637,13 +1637,13 @@ void returnAuthorizationItem::sDetermineAvailability()
   {
     XSqlQuery availability;
     availability.prepare( "SELECT itemsite_id,"
-                          "       qoh,"
+                          "       availableqoh,"
                           "       allocated,"
-                          "       noNeg(qoh - allocated) AS unallocated,"
+                          "       noNeg(availableqoh - allocated) AS unallocated,"
                           "       ordered,"
-                          "       (qoh - allocated + ordered) AS available,"
+                          "       (availableqoh - allocated + ordered) AS available,"
                           "       itemsite_leadtime "
-                          "FROM ( SELECT itemsite_id, itemsite_qtyonhand AS qoh,"
+                          "FROM ( SELECT itemsite_id, qtyAvailable(itemsite_id) AS availableqoh,"
                           "              qtyAllocated(itemsite_id, DATE(:date)) AS allocated,"
                           "              qtyOrdered(itemsite_id, DATE(:date)) AS ordered, "
                           "              itemsite_leadtime "
@@ -1657,7 +1657,7 @@ void returnAuthorizationItem::sDetermineAvailability()
     availability.exec();
     if (availability.first())
     {
-      _onHand->setDouble(availability.value("qoh").toDouble());
+      _onHand->setDouble(availability.value("availableqoh").toDouble());
       _allocated->setDouble(availability.value("allocated").toDouble());
       _unallocated->setDouble(availability.value("unallocated").toDouble());
       _onOrder->setDouble(availability.value("ordered").toDouble());

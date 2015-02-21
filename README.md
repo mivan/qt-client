@@ -1,108 +1,72 @@
-Development for the Qt (C++) xTuple App
-========
+# The xTuple ERP Desktop Client Application
 
-Download and Install Postgres 9.1 and the xTuple Database
-------
+[![Build Status for xtuple/qt-client](https://travis-ci.org/xtuple/qt-client.png)](https://travis-ci.org/xtuple/qt-client)
+[This repository](http://github.com/xtuple/qt-client) contains the source code
+for the xTuple ERP desktop client. xTuple ERP is a collection of programs
+designed to help you run your business.
 
-You'll need to install Postgres 9.1.  There are several different ways you can do this.  Go to www.postgresql.org to get started.
+_Note to haxTuple participants_: Please read [this](https://github.com/xtuple/xtuple/wiki/haxTuple-2014) before you start and remember to use `haxtuple` as the base of your branches and as the destination of pull requests.
 
-After you've successfully installed Postgres and you're able to get a local server running, you'll need to install the xTuple demo database so that you'll have a database to log in to and some data to work with when testing your code.  Select the most recent version from the link below:
+## Getting Help
 
-http://sourceforge.net/projects/postbooks/files/03%20PostBooks-databases/
+To learn more about:
 
-And you'll want to download the database entitled postbooks_demo-(version).backup
+* xTuple the company and our products, see http://www.xtuple.org and http://www.xtuple.com
+* using the desktop client, see the [xTuple ERP Reference Guide (for users)](http://www.xtuple.org/sites/default/files/refguide/current/index.html)
+* desktop client development, see our [desktop client wiki](http://github.com/xtuple/qt-client/wiki) (click on the wiki link on the right)
+* our mobile-web client, see our [mobile-web client wiki](http://github.com/xtuple/xtuple/wiki)
 
-The "demo" databases are set up with a fictional company that seems to have been running for a while, so whatever part of the application you're working on, there will surely be some data for you to test against.  Use the pg_restore terminal command to install the database .backup onto your Postgres server.
+## Development Quickstart
 
-Download and Install Qt 4.8
-------
+Our supported development environment using vagrant can be found [here](https://github.com/xtuple/xtuple-vagrant/tree/master/xtuple-desktop).
+If you prefer a different flavor of linux or a native build environment, here's a brief description of how to set up a development environment:
 
-There are several ways to do this as well.  Visit www.qt-project.org or www.developer.nokia.com to get started.
+* Install Postgres 9.1, including libraries and header files. We strongly suggest that you build from source.
+  * Start [here](http://www.postgresql.org/download/) and use the *File Browser* to get a source bundle for 9.1.x.
+  * Follow the instructions for [installing from source code](http://www.postgresql.org/docs/9.1/static/installation.html).
+  * We recommend the following configuration options:
 
+```Shell
+        $ ./configure --prefix=/usr/local/pgsql/09.1.14 --with-perl --with-openssl --with-readline --with-libxml --with-libxslt
+```
 
-Set up your Forks
-------
+* Get a Postgres server instance up and running
+* [Download](http://sourceforge.net/projects/postbooks/files/03%20PostBooks-databases/) the latest PostBooks _demo_ database and `pg_restore` it so you have some data to test with.
+* Install Qt 4.8 (not Qt 5!). We strongly recommend that you build from source. If you plan to work with credit cards and use a Mac, you **must** build Qt from source and [patch the SSL sources](https://bugreports.qt-project.org/browse/QTBUG-15344).
+  * [Download Qt](http://qt-project.org/downloads). If you don't see version 4.8 listed, click on the **Show Downloads** button and scroll down.
+  * [Install Qt](http://qt-project.org/doc/qt-4.8/installation.html)
+  * We recommend the following configuration options (the `-I` and `-L` options must match the `--prefix` option used when configuring Postgres):
 
-Now that we've installed all the necessary software to develop for xTuple, we'll need the xTuple source code, along with some other code needed to compile the app.
+```Shell
+        $ ./configure -qt-zlib -qt-libtiff -qt-libpng -qt-libmng -qt-libjpeg -plugin-sql-psql -plugin-sql-odbc -plugin-sql-sqlite -I /usr/local/pgsql/09.1.14 -L /usr/local/pgsql/09.1.14 -lkrb5 -webkit -fontconfig -continue -nomake examples -nomake demos -prefix $HOME/Qt/Qt4.8.6
+```
 
-From github.com/xtuple, you'll want to "fork" the openrpt, csvimp, xtlib, and qt-client repos into your git profile.  Towards the top right of the page of each repository, there's a fork button.  This copies everything over to your git profile, so that you can safely manipulate the code without touching anything on the xTuple git.
+* Get the source code for the desktop client from xtuple's qt-client repository. See our [Git Usage](https://github.com/xtuple/xtuple/wiki/Basic-Git-Usage) guidelines for more information. The desktop client requires OpenRPT and CSVImp, which are included as git submodules, so don't forget
+```Shell
+        $ git submodule update --init --recursive
+```
+* Build:
+```Shell
+        $ cd openrpt && qmake && make
+        $ cd ../csvimp && qmake && make
+        $ cd .. && qmake && make
+```
 
-Clone the Code
-------
+**Warning**:
+If you open Qt Designer to view or edit a `.ui` user interface file, check the widget palette _before you do anything else_. If there is no section for xTuple widgets, _quit immediately_ without saving any changes. Otherwise you risk losing important information about the user interface definition.
 
-After setting up our forks, we'll use terminal to clone our freshly forked repos onto our machines.  When you call "git clone" from a terminal window, you pull the repository from github to your local machine.  By default, it'll be created in a new directory named after the repo you're cloning.
+*Note*:
 
-    git clone git@github.com:YOUR_GIT_NAME/qt-client.git
-
-openrpt, csvimp and xtlib are submodules of the qt-client repository.  When you clone qt-client, you get these repos too, and you'll see them in your file system as subdirectories of qt-client.  They're special though; any manipulation or updating of these directories will be ignored by the qt-client repo - for example, changed openrpt code will not show up in a "git diff" called from the qt-client directory.  If you look at the directory structure through Github, you'll notice that submodules directories are green.  Submodules allow us to isolate certain subdirectories from a repository and establish these subdirectories as their own repositories.  This is very useful when you have semi-independent code such as library or framework code, and you want to be able to update and manipulate this code seperately from the parent repository/directory.
-
-Branching off Master
-------
-
-When you first clone a repo, you start off in the "master" branch.  We want this branch to be clean at all times, so we're not going to be writing code in it.  Instead, we'll create branches based off master, then work from those.  When you make changes in a branch, those changes are bound to those branch.  When you switch to another branch, you'll ditch the changes in the branch you were working in, and load up the changes you've made on the branch you're switching to.  Branching allows us to work on a number of different bugs and features at a time - a task that was an enormous hassle with SVN.
-
-To create a new branch, and to check it out, call
-
-    git checkout -b newBranchName
-
-"checkout" is the command used to switch between branches.  Use -b when you want to create a new branch.  Use 
-
-    git branch
-
-to list your branches for the current repo.
-
-Notice that, when you create a new branch, it's based off of the current branch you're in.  So when you want to start working on a new issue that you haven't touched yet, you'll want to switch to your master branch and make sure it's up to date with xTuple's master before creating a new branch to work with.  It's important that each branch approaches only one issue at a time.  See the section entitled "Keeping up to date with xTuple's Master" on how to keep your master up to date.
-
-After you've made some changes and you're ready to stick them in the master xTuple source, you'll want to add, commit, push, and issue a pull request.
-
-Adding, Committing and Pushing Code
-------
-
-Now you're ready to commit.  Make use of 
-
-    git status
-    git diff
-
-to make sure you're satisfied with the changes you've made.  "git status" will tell you that there are changes, but nothing is staged for commit.  To stage files for commit, you add them with 
-
-    git add (filenames)
-    
-Then, you commit them with 
-
-    git commit (please use -m and leave a message detailing the commit)
-
-At this point, everything's still local.  Your github page on the internet is completely unaware of this newly created and modified branch and the changes you've made to it.  To get this stuff up online, use: 
-
-    git push origin (branchName)
-
-Origin refers to the repository that you cloned from.  After pushing, you'll see on your github page for that repo that a new branch has been created.  You can use Git's diff tools to see the files and code changed against your master branch.
-
-Pull Requests
-------
-
-So, you've got your new code on YOUR github, but not xTuple's.  Time to issue a pull request.  Click the pull request button.  The left side is the side we want to merge into (in this case, xTuple's master branch) and the right side is the side where the new code is coming from (your github's newBranch).  It's always a good idea to double check everything here using Github's diff tools - make sure your code looks good and make sure you're merging from the right branch into xTuple's master!
-
-Issue the pull request, but don't merge it!  Someone else will look over the request using the diff tools and merge it into xTuple's master branch for you.  Set the incident you fixed to Resolved/Open, and whoever does the merge and tests it will close it.
-
-Keeping up to date with xTuple's Master
-------
-
-Since everyone is pushing their code and pulling requests on xTuple code all the time, your local code will become dated pretty quickly.  We need to set up an easy way to keep our code up to date with xTuple's master on github.  To do this, we set up a remote.
-
-    git remote add QTCLIENT git://github.com/xtuple/qt-client.git
-
-Now we have two remotes: origin (you) and QTCLIENT (xTuple).  To get QTCLIENT/master code into our local masters, do the following:
-
-    git checkout master
-
-    git fetch QTCLIENT
-
-    git merge QTCLIENT/master
-
-    git submodule update --recursive
-
-    git push origin master
-
-What this does is 1) checks out our local master 2) fetches QTCLIENT things 3) merges QTCLIENT's master into our local master 4) updates the submodules (in this case, openrpt, csvimp and xtlib) and 5) pushes our now up-to-date local master to our github's internet master.
-
-I recommend sticking those 5 commands in a shell script and running it a couple of times throughout the day to stay up to date.
+On some Linux distributions you can build the desktop client using OpenRPT
+and CSVImp development packages instead of compiling in the `openrpt` and
+`csvimp` directories. In these cases, set the following environment variables:
+- `OPENRPT_HEADERS` names the directory where the OpenRPT header files are
+  installed
+- `OPENRPT_LIBDIR` names the directory where the OpenRPT libraries are
+  installed
+- `OPENRPT_IMAGE_DIR` names the directory where the OpenRPT images are
+  installed
+- `CSVIMP_HEADERS` names the directory where the CSVImp header files are
+  installed
+- `OPENRPT_LIBDIR` names the directory where the OpenRPT libraries are
+  installed

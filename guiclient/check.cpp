@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -82,9 +82,9 @@ void check::sPopulate()
     _bankaccnt->setId(checkPopulate.value("checkhead_bankaccnt_id").toInt());
     _recipNumber->setText(checkPopulate.value("checkrecip_number").toString());
     _recipName->setText(checkPopulate.value("checkrecip_name").toString());
-    _amount->set(checkPopulate.value("checkhead_amount").toDouble(),
-                 checkPopulate.value("checkhead_curr_id").toInt(),
-                 checkPopulate.value("checkhead_checkdate").toDate());
+    _amount->setId(checkPopulate.value("checkhead_curr_id").toInt());
+    _amount->setEffective(checkPopulate.value("checkhead_checkdate").toDate());
+    _amount->setLocalValue(checkPopulate.value("checkhead_amount").toDouble());
     _checkdate->setDate(checkPopulate.value("checkhead_checkdate").toDate());
     _achBatchNumber->setText(checkPopulate.value("checkhead_ach_batch").toString());
     _recipType->setText(checkPopulate.value("checkrecip_type").toString());

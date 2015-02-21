@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -167,7 +167,7 @@ void adjustInvValue::sPost()
          << GuiErrorCheck(_newValue->text().length() == 0, _newValue,
                           tr("<p>You must enter a valid New Value before posting this transaction.") )
          << GuiErrorCheck(_altAccnt->isChecked() && ! _accnt->isValid(), _accnt,
-                          tr("<p>You must enter a valid Alternate G/L Account before posting this transaction.") )
+                          tr("<p>You must enter a valid Alternate Ledger Account before posting this transaction.") )
          << GuiErrorCheck(_qtyonhand <= 0.0, _item,
                           tr("You must select an Itemsite with a positive Qty on Hand before posting this transaction.") )
     ;

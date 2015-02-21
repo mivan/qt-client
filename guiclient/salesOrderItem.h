@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -28,6 +28,8 @@ class salesOrderItem : public XDialog, public Ui::salesOrderItem
     virtual void  clear();
     virtual void  setItemExtraClause();
     Q_INVOKABLE virtual int id() { return _soitemid; }
+    Q_INVOKABLE virtual int soheadid() { return _soheadid; }
+    Q_INVOKABLE virtual int custid() { return _custid; }
     Q_INVOKABLE virtual int supplyid() { return _supplyOrderId; }
     Q_INVOKABLE virtual int mode()  { return _mode; }
     Q_INVOKABLE virtual int modeType() const;
@@ -76,7 +78,7 @@ class salesOrderItem : public XDialog, public Ui::salesOrderItem
     virtual void        sTaxDetail();
     virtual void        sQtyUOMChanged();
     virtual void        sPriceUOMChanged();
-    virtual void        sCalcWoUnitCost();
+    virtual void        sCalcUnitCost();
     virtual void        sHandleButton();
     virtual void        sHandleScheduleDate();
 
@@ -117,6 +119,7 @@ class salesOrderItem : public XDialog, public Ui::salesOrderItem
     double  _qtyOrderedCache;
     double  _supplyOrderQtyCache;
     double  _supplyOrderQtyOrderedCache;
+    double  _supplyOrderQtyOrderedInvCache;
     QDate   _supplyOrderDueDateCache;
     QDate   _supplyOrderScheduledDateCache;
     bool    _supplyOrderDropShipCache;

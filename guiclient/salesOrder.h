@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -11,6 +11,7 @@
 #ifndef SALESORDER_H
 #define SALESORDER_H
 
+#include "applock.h"
 #include "guiclient.h"
 #include "xwidget.h"
 #include <parameter.h>
@@ -139,6 +140,7 @@ class salesOrder : public XWidget, public Ui::salesOrder
     bool    _captive;
     int     _soheadid;
     int     _lineMode;
+    AppLock _lock;
     int     _mode;
     int     _numSelected;
     int     _originalPrjid;
@@ -147,7 +149,6 @@ class salesOrder : public XWidget, public Ui::salesOrder
     int     _crmacctid;
     QDate   _orderDateCache;
     QDate   _shipDateCache;
-    bool    _locked;
 };
 
 #endif  // SALESORDER_H

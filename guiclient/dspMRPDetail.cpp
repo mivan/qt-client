@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -270,7 +270,7 @@ void dspMRPDetail::sFillMRPDetail()
       if (counter == 1)
       {
         runningFirmed = dspFillMRPDetail.value("firmedorders1").toDouble();
-        runningAvailability = (dspFillMRPDetail.value("itemsite_qtyonhand").toDouble() - dspFillMRPDetail.value("allocations1").toDouble() + dspFillMRPDetail.value("orders1").toDouble());
+        runningAvailability = (dspFillMRPDetail.value("qoh").toDouble() - dspFillMRPDetail.value("allocations1").toDouble() + dspFillMRPDetail.value("orders1").toDouble());
 
         qoh                = new XTreeWidgetItem(_mrp, 0, QVariant(tr("Projected QOH")), dspFillMRPDetail.value("f_qoh"));
         allocations        = new XTreeWidgetItem(_mrp, qoh, 0, QVariant(tr("Allocations")), formatQty(dspFillMRPDetail.value("allocations1").toDouble()));

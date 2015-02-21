@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -97,10 +97,7 @@ enum SetResponse creditMemoItem::set(const ParameterList &pParams)
   if (valid)
   {
     _cmheadid = param.toInt();
-    creditet.prepare("SELECT cmhead_cust_id, cmhead_shipto_id, "
-			  "       cmhead_number, COALESCE(cmhead_invcnumber, '-1') AS cmhead_invcnumber, "
-			  "       cmhead_docdate, cmhead_curr_id, "
-			  "       cmhead_taxzone_id, cmhead_rsncode_id "
+    creditet.prepare("SELECT * "
               "FROM cmhead "
               "WHERE (cmhead_id=:cmhead_id);");
     creditet.bindValue(":cmhead_id", _cmheadid);
@@ -110,8 +107,9 @@ enum SetResponse creditMemoItem::set(const ParameterList &pParams)
       _custid = creditet.value("cmhead_cust_id").toInt();
       _shiptoid = creditet.value("cmhead_shipto_id").toInt();
       _orderNumber->setText(creditet.value("cmhead_number").toString());
-	  _invoiceNumber = creditet.value("cmhead_invcnumber").toInt();
-	  if ( (_invoiceNumber != -1) && (_metrics->boolean("RestrictCreditMemos")) )
+      if (! creditet.value("cmhead_invcnumber").toString().isEmpty())
+        _invoiceNumber = creditet.value("cmhead_invcnumber").toInt();
+      if ( (_invoiceNumber != -1) && (_metrics->boolean("RestrictCreditMemos")) )
         vrestrict = TRUE;
       _taxzoneid = creditet.value("cmhead_taxzone_id").toInt();
       _tax->setId(creditet.value("cmhead_curr_id").toInt());
@@ -213,7 +211,7 @@ void creditMemoItem::sSave()
     QMessageBox::warning(this, tr("Invalid Credit Quantity"),
                          tr("<p>You have not selected a quantity of the "
 			    "selected item to credit. If you wish to return a "
-			    "quantity to stock but not issue a Credit Memo "
+			    "quantity to stock but not issue a Return "
 			    "then you should enter a Return to Stock "
 			    "transaction from the I/M module.  Otherwise, you "
 			    "must enter a quantity to credit." ));
@@ -456,11 +454,13 @@ void creditMemoItem::populate()
     {
       _updateInv->setChecked(false);
       _updateInv->setEnabled(false);
+      _qtyReturned->setEnabled(false);
     }
     else
     {
       _updateInv->setChecked(cmitem.value("cmitem_updateinv").toBool());
       _updateInv->setEnabled(true);
+      _qtyReturned->setEnabled(true);
     }
     _qtyUOM->setId(cmitem.value("cmitem_qty_uom_id").toInt());
     _ratio=cmitem.value("cmitem_qty_invuomratio").toDouble();

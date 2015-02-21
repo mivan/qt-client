@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -118,12 +118,14 @@ enum SetResponse workOrderMaterials::set(const ParameterList &pParams)
 
 void workOrderMaterials::sPopulateMenu(QMenu *pMenu, QTreeWidgetItem *)
 {
+  double qtyiss = _womatl->rawValue("womatl_qtyiss").toDouble();
   QAction *menuItem;
 
   menuItem = pMenu->addAction(tr("Edit..."), this, SLOT(sEdit()));
   menuItem = pMenu->addAction(tr("View..."), this, SLOT(sView()));
   
-  menuItem = pMenu->addAction(tr("Delete..."), this, SLOT(sDelete()));
+  if (qtyiss == 0.0)
+    menuItem = pMenu->addAction(tr("Delete..."), this, SLOT(sDelete()));
   
   pMenu->addSeparator();
   
@@ -132,7 +134,8 @@ void workOrderMaterials::sPopulateMenu(QMenu *pMenu, QTreeWidgetItem *)
   pMenu->addSeparator();
   
   menuItem = pMenu->addAction(tr("View Item-Defined Subsitute Availability..."), this, SLOT(sViewSubstituteAvailability()));
-  menuItem = pMenu->addAction(tr("Substitute..."), this, SLOT(sSubstitute()));
+  if (qtyiss == 0.0)
+    menuItem = pMenu->addAction(tr("Substitute..."), this, SLOT(sSubstitute()));
 }
 
 void workOrderMaterials::sNew()

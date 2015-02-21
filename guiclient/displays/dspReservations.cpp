@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -32,6 +32,7 @@ dspReservations::dspReservations(QWidget* parent, const char*, Qt::WFlags fl)
   setMetaSQLOptions("reservations", "detail");
 
   _qoh->setPrecision(omfgThis->qtyVal());
+  _availableqoh->setPrecision(omfgThis->qtyVal());
   _available->setPrecision(omfgThis->qtyVal());
 
   list()->setRootIsDecorated(true);
@@ -206,6 +207,7 @@ void dspReservations::sFillList()
     display::sFillList();
 
     QString avails("SELECT itemsite_qtyonhand,"
+                   "       qtyavailable(itemsite_id) AS availableqoh, "
                    "       qtyunreserved(itemsite_id) AS unreserved "
                    "FROM itemsite "
                    "WHERE ((itemsite_item_id=<? value(\"item_id\") ?>)"
@@ -215,6 +217,7 @@ void dspReservations::sFillList()
     if (dspFillList.first())
     {
       _qoh->setDouble(dspFillList.value("itemsite_qtyonhand").toDouble());
+      _availableqoh->setDouble(dspFillList.value("availableqoh").toDouble());
       _available->setDouble(dspFillList.value("unreserved").toDouble());
     }
     else if (dspFillList.lastError().type() != QSqlError::NoError)

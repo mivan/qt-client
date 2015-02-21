@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -25,12 +25,24 @@ salesHistoryInformation::salesHistoryInformation(QWidget* parent, const char* na
   _orderNumber->setValidator(omfgThis->orderVal());
   _invoiceNumber->setValidator(omfgThis->orderVal());
   _shipped->setValidator(omfgThis->qtyVal());
+  
   _unitPrice->setValidator(omfgThis->priceVal());
-  _unitCost->setValidator(omfgThis->priceVal());
-  _commission->setValidator(omfgThis->negMoneyVal());
-
   _extendedPrice->setPrecision(omfgThis->moneyVal());
+
+  _unitPriceLit->setVisible(_privileges->check("ViewCustomerPrices"));
+  _unitPrice->setVisible(_privileges->check("ViewCustomerPrices"));
+  _extPriceLit->setVisible(_privileges->check("ViewCustomerPrices"));
+  _extendedPrice->setVisible(_privileges->check("ViewCustomerPrices"));
+
+  _unitCost->setValidator(omfgThis->priceVal());
   _extendedCost->setPrecision(omfgThis->moneyVal());
+
+  _unitCostLit->setVisible(_privileges->check("ViewCosts"));
+  _unitCost->setVisible(_privileges->check("ViewCosts"));
+  _extCostLit->setVisible(_privileges->check("ViewCosts"));
+  _extendedCost->setVisible(_privileges->check("ViewCosts"));
+
+  _commission->setValidator(omfgThis->negMoneyVal());
 
   _salesrep->setType(XComboBox::SalesReps);
 

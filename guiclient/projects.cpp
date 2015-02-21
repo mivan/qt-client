@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -20,6 +20,7 @@
 
 #include <parameter.h>
 
+#include "characteristic.h"
 #include "parameterwidget.h"
 #include "project.h"
 #include "task.h"
@@ -40,13 +41,30 @@ projects::projects(QWidget* parent, const char*, Qt::WFlags fl)
 {
   setupUi(optionsWidget());
   setWindowTitle(tr("Projects"));
-  setMetaSQLOptions("projects", "detail");
+  setMetaSQLOptions("projects", "detail_nohierarchy");
   setReportName("ProjectsList");
   setParameterWidgetVisible(true);
   setNewVisible(true);
   setSearchVisible(true);
   setQueryOnStartEnabled(true);
   setUseAltId(true);
+
+  //  Project Details
+  list()->addColumn(tr("Project"),                        _orderColumn, Qt::AlignLeft,   true,  "prj_number");
+  list()->addColumn(tr("Project Name"),                   -1,           Qt::AlignLeft,   true,  "prj_name");
+  list()->addColumn(tr("Project Description"),            -1,           Qt::AlignLeft,   true,  "prj_descrip");
+  list()->addColumn(tr("Status"),                         _itemColumn,  Qt::AlignCenter, true,  "project_status" );
+  list()->addColumn(tr("Project Type"),                   _itemColumn,  Qt::AlignCenter, true,  "project_type" );
+  list()->addColumn(tr("Owner"),                          _userColumn,  Qt::AlignLeft,   true,  "prj_owner_username");
+  list()->addColumn(tr("Assigned To"),                    _userColumn,  Qt::AlignLeft,   true,  "prj_username");
+  list()->addColumn(tr("Account"),                        _userColumn,  Qt::AlignLeft,   true,  "crmacct_name");
+  list()->addColumn(tr("Contact"),                        _userColumn,  Qt::AlignLeft,   true,  "cntct_name");
+  list()->addColumn(tr("City"),                           -1,           Qt::AlignLeft,   true,  "addr_city");
+  list()->addColumn(tr("State"),                          -1,           Qt::AlignLeft,   true,  "addr_state");
+  list()->addColumn(tr("Project Due"),                    _dateColumn,  Qt::AlignCenter, true,  "prj_due_date");
+  list()->addColumn(tr("Project Assigned"),               _dateColumn,  Qt::AlignCenter, true,  "prj_assigned_date");
+  list()->addColumn(tr("Project Started"),                _dateColumn,  Qt::AlignCenter, true,  "prj_start_date");
+  list()->addColumn(tr("Project Completed"),              _dateColumn,  Qt::AlignCenter, true,  "prj_completed_date");
 
   connect(list(), SIGNAL(itemSelected(int)), this, SLOT(sOpen()));
 
@@ -61,19 +79,28 @@ projects::projects(QWidget* parent, const char*, Qt::WFlags fl)
 
   connect(omfgThis, SIGNAL(projectsUpdated(int)), this, SLOT(sFillList()));
   connect(_showComplete, SIGNAL(toggled(bool)), this, SLOT(sFillList()));
-  connect(_salesOrders, SIGNAL(toggled(bool)), this, SLOT(sFillList()));
-  connect(_workOrders, SIGNAL(toggled(bool)), this, SLOT(sFillList()));
-  connect(_purchaseOrders, SIGNAL(toggled(bool)), this, SLOT(sFillList()));
-  connect(_incidents, SIGNAL(toggled(bool)), this, SLOT(sFillList()));
-  connect(_showHierarchy, SIGNAL(toggled(bool)), this, SLOT(sBuildList()));
+//  connect(_salesOrders, SIGNAL(toggled(bool)), this, SLOT(sFillList()));
+//  connect(_workOrders, SIGNAL(toggled(bool)), this, SLOT(sFillList()));
+//  connect(_purchaseOrders, SIGNAL(toggled(bool)), this, SLOT(sFillList()));
+//  connect(_incidents, SIGNAL(toggled(bool)), this, SLOT(sFillList()));
+//  connect(_showHierarchy, SIGNAL(toggled(bool)), this, SLOT(sBuildList()));
+  _ordersGroup->hide();
 
   QString qryType = QString( "SELECT prjtype_id, prjtype_descr FROM prjtype " );
 
+  QString qryStatus = QString( "SELECT  1, '%1' UNION "
+                               "SELECT  2, '%2' UNION "
+                               "SELECT  3, '%3'")
+  .arg(tr("Complete"))
+  .arg(tr("Concept"))
+  .arg(tr("In-Process"));
+  
   parameterWidget()->append(tr("Owner"), "owner_username", ParameterWidget::User);
   parameterWidget()->append(tr("AssignedTo"), "assigned_username", ParameterWidget::User);
-  parameterWidget()->append(tr("CRM Account"), "crmacct_id", ParameterWidget::Crmacct);
+  parameterWidget()->append(tr("Account"), "crmacct_id", ParameterWidget::Crmacct);
   parameterWidget()->append(tr("Contact"), "cntct_id", ParameterWidget::Contact);
   parameterWidget()->appendComboBox(tr("Project Type"), "prjtype_id", qryType);
+  parameterWidget()->appendComboBox(tr("Project Status"), "prjstatus_id", qryStatus);
   parameterWidget()->append(tr("Project"), "prj_id", ParameterWidget::Project);
   parameterWidget()->append(tr("Project Task"), "project_task", ParameterWidget::Text);
   parameterWidget()->append(tr("Sales Order"), "cohead_id", ParameterWidget::SalesOrder);
@@ -88,7 +115,11 @@ projects::projects(QWidget* parent, const char*, Qt::WFlags fl)
   parameterWidget()->append(tr("Completed Start Date"), "completedStartDate", ParameterWidget::Date, QDate::currentDate());
   parameterWidget()->append(tr("Completed End Date"), "completedEndDate", ParameterWidget::Date, QDate::currentDate());
 
-  sBuildList();
+  setupCharacteristics(characteristic::Projects);
+          
+  _statuses << "None" << "C" << "P" << "O";
+
+//  sBuildList();
 }
 
 void projects::sBuildList()
@@ -107,7 +138,7 @@ void projects::sBuildList()
     list()->addColumn(tr("Project Type"),        _itemColumn,  Qt::AlignCenter, true,  "project_type" );
     list()->addColumn(tr("Owner"),         _userColumn,  Qt::AlignLeft,   false, "prj_owner_username");
     list()->addColumn(tr("Assigned To"),   _userColumn,  Qt::AlignLeft,   true,  "prj_username");
-    list()->addColumn(tr("CRM Account/Customer"),   _userColumn,  Qt::AlignLeft,   true,  "customer");
+    list()->addColumn(tr("Account/Customer"),   _userColumn,  Qt::AlignLeft,   true,  "customer");
     list()->addColumn(tr("Contact"),       _userColumn,  Qt::AlignLeft,   false,  "contact");
     list()->addColumn(tr("City"),       -1,  Qt::AlignLeft,   false,  "city");
     list()->addColumn(tr("State"),       -1,  Qt::AlignLeft,   false,  "state");
@@ -135,7 +166,7 @@ void projects::sBuildList()
     list()->addColumn(tr("Project Type"),        _itemColumn,  Qt::AlignCenter, true,  "project_type" );
     list()->addColumn(tr("Owner"),         _userColumn,  Qt::AlignLeft,   true, "prj_owner_username");
     list()->addColumn(tr("Assigned To"),   _userColumn,  Qt::AlignLeft,   true,  "prj_username");
-    list()->addColumn(tr("CRM Account"),   _userColumn,  Qt::AlignLeft,   true,  "crmacct_name");
+    list()->addColumn(tr("Account"),   _userColumn,  Qt::AlignLeft,   true,  "crmacct_name");
     list()->addColumn(tr("Contact"),       _userColumn,  Qt::AlignLeft,   true,  "cntct_name");
     list()->addColumn(tr("City"),       -1,  Qt::AlignLeft,   true,  "addr_city");
     list()->addColumn(tr("State"),       -1,  Qt::AlignLeft,   true,  "addr_state");
@@ -161,6 +192,8 @@ void projects::sBuildList()
     list()->addColumn(tr("Budget Exp."),   _priceColumn,  Qt::AlignRight,  true,  "prjtask_exp_budget");
     list()->addColumn(tr("Actual Exp."),   _priceColumn,  Qt::AlignRight,  true,  "prjtask_exp_actual");
     list()->addColumn(tr("Balance Exp."),  _priceColumn,  Qt::AlignRight,  true,  "prjtask_exp_balance");
+    setupCharacteristics(characteristic::Projects);
+    _showHierarchy->setEnabled(false);
   }
 
   sFillList();
@@ -637,6 +670,13 @@ bool projects::setParams(ParameterList &params)
   if (!display::setParams(params))
     return false;
 
+  bool valid;
+  QVariant param;
+  
+  param = params.value("prjstatus_id", &valid);
+  if (valid)
+    params.append("prjstatus", _statuses.at(param.toInt()));
+  
   if (_showComplete->isChecked())
     params.append("showComplete",true);
 

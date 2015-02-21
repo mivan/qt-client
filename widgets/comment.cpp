@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -334,6 +334,14 @@ void comment::set(const ParameterList &pParams)
     _cmnttype->setType(XComboBox::TaskCommentTypes);
     _targetId = param.toInt();
   }
+  
+  param = pParams.value("tatc_id", &valid);
+  if (valid)
+  {
+    _source = Comments::TimeAttendance;
+    _cmnttype->setType(XComboBox::TimeAttendanceCommentTypes);
+    _targetId = param.toInt();
+  }
 
   param = pParams.value("addr_id", &valid);
   if (valid)
@@ -469,6 +477,9 @@ void comment::set(const ParameterList &pParams)
         case Comments::Task:
           _cmnttype->setType(XComboBox::TaskCommentTypes);
           break;
+        case Comments::TimeAttendance:
+          _cmnttype->setType(XComboBox::TimeAttendanceCommentTypes);
+          break;          
         case Comments::TodoItem:
           _cmnttype->setType(XComboBox::TodoItemCommentTypes);
           break;

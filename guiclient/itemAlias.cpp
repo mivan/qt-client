@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -118,7 +118,7 @@ void itemAlias::sSave()
   if (itemSave.first())
     errors << GuiErrorCheck(true, _number,
                             tr( "An Item Alias for the selected Item Number has already been defined\n"
-                                "with the selected Alias Item Number and CRM Account.\n"
+                                "with the selected Alias Item Number and Account.\n"
                                 "You may not create duplicate Item Aliases." ) );
 
   if (GuiErrorCheck::reportErrors(this, tr("Cannot Save Item Alias"), errors))

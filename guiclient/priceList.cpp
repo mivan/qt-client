@@ -1,7 +1,7 @@
   /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -53,9 +53,11 @@ priceList::priceList(QWidget* parent, const char * name, Qt::WindowFlags fl)
   _prodcatid = -1;
   _custtypeid = -1;
   _custtypecode = "";
+  _iteminvpricerat = 1.0;
 
   _qty->setValidator(omfgThis->qtyVal());
   _listPrice->setPrecision(omfgThis->priceVal());
+  _listCost->setPrecision(omfgThis->priceVal());
   _unitCost->setPrecision(omfgThis->costVal());
 }
 
@@ -88,13 +90,6 @@ enum SetResponse priceList::set(const ParameterList &pParams)
   {
     _shiptoid = param.toInt();
     sNewShipto();
-  }
-
-  param = pParams.value("item_id", &valid);
-  if (valid)
-  {
-    _item->setId(param.toInt());
-    _item->setReadOnly(true);
   }
 
   param = pParams.value("warehouse_id", &valid);
@@ -133,6 +128,13 @@ enum SetResponse priceList::set(const ParameterList &pParams)
     _qty->setEnabled(false);
   }
 
+  param = pParams.value("item_id", &valid);
+  if (valid)
+  {
+    _item->setId(param.toInt());
+    _item->setReadOnly(true);
+  }
+  
   sFillList();
 
   return NoError;
@@ -186,24 +188,32 @@ void priceList::sNewShipto()
 void priceList::sNewItem()
 {
   _listPrice->clear();
+  _listCost->clear();
   _unitCost->clear();
   if (_item->isValid())
   {
     XSqlQuery itemq;
     itemq.prepare("SELECT item_listprice, item_listcost, item_prodcat_id,"
-                  "       itemCost(itemsite_id) AS item_unitcost"
+                  "       itemuomtouomratio(item_id, item_inv_uom_id, item_price_uom_id) AS iteminvpricerat,"
+                  "       itemCost(:item_id, :cust_id, :shipto_id, :qty, item_inv_uom_id, item_price_uom_id,"
+                  "                :curr_id, :effective, :asof, :warehous_id) AS item_unitcost"
                   "  FROM item LEFT OUTER JOIN itemsite ON (itemsite_item_id=item_id AND itemsite_warehous_id=:warehous_id)"
                   " WHERE (item_id=:item_id);");
-    itemq.bindValue(":item_id", _item->id());
-    itemq.bindValue(":warehous_id", _warehouse->id());
+    itemq.bindValue(":item_id",          _item->id());
+    itemq.bindValue(":cust_id",          _cust->id());
+    itemq.bindValue(":shipto_id",        _shiptoid);
+    itemq.bindValue(":qty",              _qty->toDouble());
+    itemq.bindValue(":curr_id",          _curr_id);
+    itemq.bindValue(":effective",        _effective);
+    itemq.bindValue(":asof",             _asOf);
+    itemq.bindValue(":warehous_id",      _warehouse->id());
     itemq.exec();
     if (itemq.first())
     {
       _listPrice->setDouble(itemq.value("item_listprice").toDouble());
-      if (_metrics->boolean("WholesalePriceCosting"))
-        _unitCost->setDouble(itemq.value("item_listcost").toDouble());
-      else
-        _unitCost->setDouble(itemq.value("item_unitcost").toDouble());
+      _listCost->setDouble(itemq.value("item_listcost").toDouble());
+      _unitCost->setDouble(itemq.value("item_unitcost").toDouble());
+      _iteminvpricerat = itemq.value("iteminvpricerat").toDouble();
       _prodcatid = itemq.value("item_prodcat_id").toInt();
     }
     else if (itemq.lastError().type() != QSqlError::NoError)
@@ -256,7 +266,8 @@ void priceList::sFillList()
   pricelistp.append("effective",        _effective);
   pricelistp.append("asof",             _asOf);
   pricelistp.append("item_listprice",   _listPrice->toDouble());
-  pricelistp.append("item_unitcost",    _unitCost->toDouble());
+  pricelistp.append("item_listcost",    _listCost->toDouble());
+  pricelistp.append("item_unitcost",    (_unitCost->toDouble() / _iteminvpricerat));
 
   XSqlQuery pricelistq = pricelistm.toQuery(pricelistp);
   _price->populate(pricelistq, true);

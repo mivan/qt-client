@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -66,6 +66,9 @@ void itemGroups::sDelete()
   itemDelete.prepare( "DELETE FROM itemgrpitem "
              "WHERE (itemgrpitem_itemgrp_id=:itemgrp_id);"
 
+             "DELETE FROM itemgrpitem "
+             "WHERE ((itemgrpitem_item_id=:itemgrp_id) AND (itemgrpitem_item_type='G'));"
+                                        
              "DELETE FROM itemgrp "
              "WHERE (itemgrp_id=:itemgrp_id);" );
   itemDelete.bindValue(":itemgrp_id", _itemgrp->id());
@@ -116,7 +119,7 @@ void itemGroups::sFillList(int)
                      "       itemgrp_catalog AS catalog, "
                      "       0 AS depth, array[itemgrp_id] AS path, false AS cycle "
                      "FROM itemgrp "
-                     "UNION "
+                     "UNION ALL "
                      "SELECT itemgrp_id AS id, "
                      "       CASE itemgrpitem_item_type WHEN 'I' THEN item_number ELSE itemgrp_name END AS name, "
                      "       CASE itemgrpitem_item_type WHEN 'I' THEN item_descrip1 ELSE itemgrp_descrip END AS descrip, "
@@ -125,6 +128,7 @@ void itemGroups::sFillList(int)
                      "FROM indentedgroups JOIN itemgrpitem ON (itemgrpitem_itemgrp_id=id) "
                      "  LEFT OUTER JOIN item ON (item_id=itemgrpitem_item_id AND itemgrpitem_item_type='I') "
                      "  LEFT OUTER JOIN itemgrp ON (itemgrp_id=itemgrpitem_item_id AND itemgrpitem_item_type='G') "
+                     "WHERE (NOT cycle)"
                      ") "
                      "SELECT id, name, descrip, catalog, depth AS xtindentrole, path, cycle "
                      "FROM indentedgroups "

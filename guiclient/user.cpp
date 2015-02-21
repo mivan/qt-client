@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -214,17 +214,17 @@ bool user::save()
 
   QList<GuiErrorCheck> errors;
   errors << GuiErrorCheck(! username.contains(QRegExp("[A-Za-z]")), _username,
-                          tr("You must enter a valid Username before you can save this User."))
+                          tr("You must enter a valid Username before you can save this User Account."))
          << GuiErrorCheck(_username->text().contains(QRegExp("\\s")), _username,
                           tr("The Username cannot include any spaces."))
          << GuiErrorCheck(_passwd->text().isEmpty(), _passwd,
-                          tr("You must enter a valid Password before you can save this User."))
+                          tr("You must enter a valid Password before you can save this User Account."))
          << GuiErrorCheck(_passwd->text() != _verify->text(), _passwd,
                           tr("The entered password and verify do not match. "
                              "Please enter both again carefully."))
    ;
 
-  if (GuiErrorCheck::reportErrors(this, tr("Cannot save User"), errors))
+  if (GuiErrorCheck::reportErrors(this, tr("Cannot save User Account"), errors))
   {
      if (_passwd->text() != _verify->text())
      {
@@ -246,7 +246,7 @@ bool user::save()
 
       if(isCloud || isXtuple)
       {
-        salt = "private";
+        salt = "j3H44uadEI#8#kSmkh#H%JSLAKDOHImklhdfsn3#432?%^kjasdjla3uy989apa3uipoweurw-03235##+=-lhkhdNOHA?%@mxncvbwoiwerNKLJHwe278NH28shNeGc";
       }
       else
       {
@@ -283,7 +283,7 @@ bool user::save()
       usrq.bindValue(":username", username);
       usrq.bindValue(":createUsers", QVariant(_createUsers->isChecked()));
       usrq.exec();
-      if (ErrorReporter::error(QtCriticalMsg, this, tr("Saving User"),
+      if (ErrorReporter::error(QtCriticalMsg, this, tr("Saving User Account"),
                                usrq, __FILE__, __LINE__))
         return false;
     }
@@ -299,7 +299,7 @@ bool user::save()
       usrq.exec( QString("ALTER GROUP xtrole ADD USER %1;")
               .arg(username) );
     }
-    if (ErrorReporter::error(QtCriticalMsg, this, tr("Saving User"),
+    if (ErrorReporter::error(QtCriticalMsg, this, tr("Saving User Account"),
                              usrq, __FILE__, __LINE__))
       return false;
   }
@@ -335,7 +335,7 @@ bool user::save()
   usrq.bindValue(":agent", (_agent->isChecked() ? "t" : "f"));
   usrq.bindValue(":active", (_active->isChecked() ? "t" : "f"));
   usrq.exec();
-  if (ErrorReporter::error(QtCriticalMsg, this, tr("Saving User"),
+  if (ErrorReporter::error(QtCriticalMsg, this, tr("Saving User Account"),
                            usrq, __FILE__, __LINE__))
     return false;
 
@@ -545,7 +545,7 @@ void user::sCheck()
   //This regexp checks to make sure the user name starts with a letter.
   QRegExp re("^\\d"); // just digits
   QRegExp re2("^\\w"); // this includes all letters & numbers of all alphabets
-  _cUsername = _username->text().trimmed();
+  _cUsername = _username->text().trimmed().toLower();
   if (((re.indexIn(_cUsername) != -1) || (re2.indexIn(_cUsername) == -1)) && _username->text() != "")
   {
       QMessageBox::critical(this, tr("Error"), tr("User names must begin with a letter."));
@@ -567,21 +567,22 @@ void user::sCheck()
       _username->setEnabled(FALSE);
       _properName->setFocus();
     }
-    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Getting User"),
+    else if (ErrorReporter::error(QtCriticalMsg, this, tr("Getting User Account"),
                                   usrq, __FILE__, __LINE__))
       return;
     
     XSqlQuery dupq;
     dupq.prepare("SELECT crmacct_id"
                  "  FROM crmacct "
-                 " WHERE (UPPER(crmacct_number)=UPPER(:username));");
+                 " WHERE (UPPER(crmacct_number)=UPPER(:username))"
+                 "   AND crmacct_usr_username IS NULL;");
     dupq.bindValue(":username", _cUsername);
     dupq.exec();
     if (dupq.first())
     {
       if (QMessageBox::question(this, tr("Convert"),
                                 tr("<p>This number is currently assigned to CRM Account. "
-                                   "Do you want to convert the CRM Account to a User?"),
+                                   "Do you want to convert the CRM Account to a User Account?"),
                                 QMessageBox::Yes,
                                 QMessageBox::No | QMessageBox::Default) == QMessageBox::No)
       {
@@ -639,10 +640,10 @@ bool user::sPopulate()
       {
         QMessageBox::warning(this, tr("No Spaces Allowed"),
                              tr("<p>Usernames cannot include space characters "
-                                "but must also match the associated CRM Account "
-                                "numbers. Please Cancel the User window and "
-                                "remove the spaces from the CRM Account number "
-                                "before trying to create this User."));
+                                "but must also match the associated Account "
+                                "numbers. Please Cancel the User Account window and "
+                                "remove the spaces from the Account number "
+                                "before trying to create this User Account."));
         return false;
       }
       _username->setEnabled(false);
@@ -658,6 +659,7 @@ bool user::sPopulate()
     _employee->setId(usrq.value("crmacct_emp_id").toInt());
     _crmacctid = usrq.value("crmacct_id").toInt();
     _crmowner = usrq.value("crmacct_owner_username").toString();
+    _cUsername = _username->text().trimmed().toLower();
 
     _passwd->setText("        ");
     _verify->setText("        ");
@@ -703,7 +705,7 @@ bool user::sPopulate()
       sModuleSelected(_module->itemText(0));
     }
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Getting User"),
+  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Getting User Account"),
                                 usrq, __FILE__, __LINE__))
     return false;
 
@@ -737,7 +739,7 @@ void user::sEnhancedAuthUpdate()
 {
   if((_mode == cEdit) && (_authCache != _enhancedAuth->isChecked()) && (_passwd->text() == "        "))
     QMessageBox::information( this, tr("Enhanced Authentication"),
-      tr("<p>You have changed this user's Enhanced Authentication option. "
+      tr("<p>You have changed this User Account's Enhanced Authentication option. "
          "The password must be updated in order for this change to take "
          "full effect.") );
 }
@@ -869,7 +871,7 @@ void user::sCrmAccount()
     params.append("mode", "edit");
   else
   {
-    qWarning("tried to open CRM Account window without privilege");
+    qWarning("tried to open Account window without privilege");
     return;
   }
 

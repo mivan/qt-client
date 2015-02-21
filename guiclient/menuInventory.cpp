@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -270,7 +270,7 @@ menuInventory::menuInventory(GUIClient *Pparent) :
     // Inventory | Shipping | Forms
     { "menu",                              tr("&Forms"),                                   (char*)shippingFormsMenu,                shippingMenu,      "true",                                          NULL, NULL, true, NULL },
     { "sr.packingListBatch",               tr("Packing List &Batch..."),                   SLOT(sPackingListBatch()),               shippingFormsMenu, "MaintainPackingListBatch ViewPackingListBatch", NULL, NULL, true, NULL },
-    { "sr.printPackingListBatchByShipvia", tr("Print Packing List Batch by Ship &Via..."), SLOT(sPrintPackingListBatchByShipvia()), shippingFormsMenu, "PrintPackingLists",  NULL, NULL, true, NULL },
+    { "sr.printPackingListBatchByShipvia", tr("Print Packing List Batch..."), SLOT(sPrintPackingListBatchByShipvia()), shippingFormsMenu, "PrintPackingLists",  NULL, NULL, true, NULL },
     { "sr.printPackingList",               tr("&Packing List..."),                         SLOT(sPrintPackingLists()),              shippingFormsMenu, "PrintPackingLists",  NULL, NULL, true, NULL },
     { "separator",                         NULL,                                           NULL,                                    shippingFormsMenu, "true",               NULL, NULL, true, NULL },
     { "sr.printShippingForm",              tr("&Shipping Form..."),                        SLOT(sPrintShippingForm()),              shippingFormsMenu, "PrintBillsOfLading", NULL, NULL, true, NULL },
@@ -373,7 +373,7 @@ menuInventory::menuInventory(GUIClient *Pparent) :
     // Inventory | Utilities
     { "menu",                                     tr("&Utilities"),                       (char*)utilitiesMenu,                     mainMenu,       "true",                    NULL, NULL, true, NULL },
     { "im.dspUnbalancedQOHByClassCode",           tr("U&nbalanced QOH..."),               SLOT(sDspUnbalancedQOHByClassCode()),     utilitiesMenu,  "ViewItemSites",           NULL, NULL, true, NULL },
-    { "im.adjustInvValue",                        tr("Adjust Avg. Cost Value..."),        SLOT(sAdjustInvValue()),                  utilitiesMenu,  "CreateAdjustmentTrans ViewCosts", NULL, NULL, _metrics->boolean("AllowAvgCostMethod"), NULL },
+    { "im.adjustInvValue",                        tr("Adjust Avg. Cost Value..."),        SLOT(sAdjustInvValue()),                  utilitiesMenu,  "CreateAdjustmentTrans", NULL, NULL, _metrics->boolean("AllowAvgCostMethod"), NULL },
     { "separator",                                NULL,                                   NULL,                                     utilitiesMenu,  "true",                    NULL, NULL, true, NULL },
 
     // Inventory | Utilities | Update Item Controls

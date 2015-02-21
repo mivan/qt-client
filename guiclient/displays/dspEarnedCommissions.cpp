@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -36,7 +36,7 @@ dspEarnedCommissions::dspEarnedCommissions(QWidget* parent, const char*, Qt::WFl
   list()->addColumn(tr("Cust. #"),         _orderColumn,    Qt::AlignLeft,   true,  "cust_number"   );
   list()->addColumn(tr("Ship-To"),         -1,              Qt::AlignLeft,   true,  "cohist_shiptoname"   );
   list()->addColumn(tr("Invc. Date"),      _dateColumn,     Qt::AlignCenter, true,  "cohist_invcdate" );
-  list()->addColumn(tr("Item Number"),     _itemColumn,     Qt::AlignLeft,   true,  "item_number"   );
+  list()->addColumn(tr("Item Number"),     _itemColumn,     Qt::AlignLeft,   true,  "itemnumber"   );
   list()->addColumn(tr("Qty."),            _qtyColumn,      Qt::AlignRight,  true,  "cohist_qtyshipped"  );
   list()->addColumn(tr("Ext. Price"),      _moneyColumn,    Qt::AlignRight,  true,  "extprice"  );
   list()->addColumn(tr("Commission"),      _moneyColumn,    Qt::AlignRight,  true,  "cohist_commission"  );

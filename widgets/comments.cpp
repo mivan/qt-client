@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -69,6 +69,7 @@ const Comments::CommentMap Comments::_commentMap[] =
     CommentMap( SalesOrder,        "S"   ),
     CommentMap( SalesOrderItem,    "SI"  ),
     CommentMap( Task,              "TA"  ),
+    CommentMap( TimeAttendance,    "TATC"),
     CommentMap( TodoItem,          "TD"  ),
     CommentMap( TransferOrder,     "TO"  ),
     CommentMap( TransferOrderItem, "TI"  ),
@@ -111,7 +112,7 @@ Comments::Comments(QWidget *pParent, const char *name) :
   _comment->addColumn(tr("Date/Time"), _timeDateColumn, Qt::AlignCenter,true, "comment_date");
   _comment->addColumn(tr("Type"),    _itemColumn, Qt::AlignCenter,true, "type");
   _comment->addColumn(tr("Source"),  _itemColumn, Qt::AlignCenter,true, "comment_source");
-  _comment->addColumn(tr("User"),    _userColumn, Qt::AlignCenter,true, "comment_user");
+  _comment->addColumn(tr("User Account"),    _userColumn, Qt::AlignCenter,true, "comment_user");
   _comment->addColumn(tr("Comment"), -1,          Qt::AlignLeft,  true, "first");
   _comment->addColumn(tr("Public"),    _ynColumn, Qt::AlignLeft, false, "comment_public");
   hbox->addWidget(_comment);

@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -161,6 +161,8 @@ void prospect::sSave()
   QList<GuiErrorCheck> errors;
   errors << GuiErrorCheck(_number->text().trimmed().isEmpty(), _number,
                           tr("You must enter a number for this Prospect"))
+         << GuiErrorCheck(_name->text().trimmed().isEmpty(), _name,
+                          tr("You must enter a name for this Prospect"))
     ;
   // disallow overlap of prospect and customer numbers
   if (_number->text().trimmed() != _cachedNumber)
@@ -472,7 +474,7 @@ void prospect::sCrmAccount()
     params.append("mode", "edit");
   else
   {
-    qWarning("tried to open CRM Account window without privilege");
+    qWarning("tried to open Account window without privilege");
     return;
   }
 

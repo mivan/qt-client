@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -159,10 +159,16 @@ void returnWoMaterialItem::sSetQOH(int pWomatlid)
     if (_wo->method() == "A")
       _qty->setDouble(_womatl->qtyIssued());
     else
-      _qty->setDouble((_womatl->qtyIssued() - _womatl->qtyRequired()));
-      
+    {
+      // depending on how the womatl_id is set, sometimes qtyRequired and qtyIssued are ABS
+      if (_womatl->qtyRequired() < 0.0)
+        _qty->setDouble((_womatl->qtyIssued() - _womatl->qtyRequired()));
+      else
+        _qty->setDouble((_womatl->qtyRequired() - _womatl->qtyIssued()));
+    }
+    
     XSqlQuery qoh;
-    qoh.prepare( "SELECT itemuomtouom(itemsite_item_id, NULL, womatl_uom_id, itemsite_qtyonhand) AS qtyonhand,"
+    qoh.prepare( "SELECT itemuomtouom(itemsite_item_id, NULL, womatl_uom_id, qtyAvailable(itemsite_id)) AS availableqoh,"
                  "       uom_name "
                  "  FROM womatl, itemsite, uom"
                  " WHERE((womatl_itemsite_id=itemsite_id)"
@@ -173,7 +179,7 @@ void returnWoMaterialItem::sSetQOH(int pWomatlid)
     if (qoh.first())
     {
       _uom->setText(qoh.value("uom_name").toString());
-      _cachedQOH = qoh.value("qtyonhand").toDouble();
+      _cachedQOH = qoh.value("availableqoh").toDouble();
       _beforeQty->setDouble(_cachedQOH);
     }
     else

@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -127,7 +127,7 @@ void copyItem::sCopyBom()
   if (_copyBOM->isChecked())
   {
     XSqlQuery bomitemq;
-    bomitemq.prepare("SELECT copyBom(:sourceitemid, :targetitemid) AS result;");
+    bomitemq.prepare("SELECT copyBom(:sourceitemid, :targetitemid, TRUE) AS result;");
     bomitemq.bindValue(":sourceitemid", _source->id());
     bomitemq.bindValue(":targetitemid", _newitemid);
     bomitemq.exec();
@@ -179,7 +179,7 @@ void copyItem::sAddBomitem()
   }
   qtyper = QInputDialog::getDouble(this, tr("Quantity Per"),
                                  uomname,
-                                 qtyper, 1, 10000, 5, &ok);
+                                 qtyper, 0.00001, 999999.99999, 5, &ok);
   if ( !ok )
     return;
   
@@ -306,9 +306,11 @@ void copyItem::sCopyItemsite()
   if (_copyItemsite->isChecked())
   {
     XSqlQuery itemsiteq;
-    itemsiteq.prepare("SELECT copyItemsite(itemsite_id, itemsite_warehous_id, :targetitemid) AS result "
-                      "FROM itemsite "
-                      "WHERE (itemsite_item_id=:sourceitemid);");
+    itemsiteq.prepare("SELECT copyItemsite(itemsite_id, itemsite_warehous_id, :targetitemid) AS result FROM "
+                      "(SELECT * "
+                      " FROM itemsite JOIN whsinfo ON (warehous_id=itemsite_warehous_id) "
+                      " WHERE (itemsite_item_id=:sourceitemid) "
+                      " ORDER BY warehous_sequence DESC) AS data;");
     itemsiteq.bindValue(":sourceitemid", _source->id());
     itemsiteq.bindValue(":targetitemid", _newitemid);
     itemsiteq.exec();

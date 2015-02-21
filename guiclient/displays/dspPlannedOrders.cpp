@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -12,6 +12,7 @@
 
 #include <QAction>
 #include <QMenu>
+#include <QMessageBox>
 #include <QSqlError>
 
 #include "guiclient.h"
@@ -172,6 +173,12 @@ void dspPlannedOrders::sNew()
 
 void dspPlannedOrders::sEditOrder()
 {
+  if (list()->currentItem()->rawValue("planord_firm") == true)
+  {
+    QMessageBox::warning( this, tr("Planned Order Firm"),
+                         tr("This Planned Order is firm and must be softened before editing."));
+    return;
+  }
   ParameterList params;
   params.append("mode", "edit");
   params.append("planord_id", list()->id());

@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -91,10 +91,10 @@ void creditMemoEditList::sPopulateMenu(QMenu *pMenu, QTreeWidgetItem *pSelected)
 {
   _orderid = _cmhead->id();
 
-  pMenu->addAction(tr("Edit Credit Memo..."), this, SLOT(sEditCreditMemo()));
+  pMenu->addAction(tr("Edit Return..."), this, SLOT(sEditCreditMemo()));
 
   if (((XTreeWidgetItem *)pSelected)->altId() != -1)
-    pMenu->addAction(tr("Edit Credit Memo Item..."), this, SLOT(sEditCreditMemoItem()));
+    pMenu->addAction(tr("Edit Return Item..."), this, SLOT(sEditCreditMemoItem()));
 }
 
 void creditMemoEditList::sFillList()
@@ -138,7 +138,7 @@ bool creditMemoEditList::checkSitePrivs(int ordid)
       if (!check.value("result").toBool())
       {
         QMessageBox::critical(this, tr("Access Denied"),
-                              tr("You may not view or edit this Credit Memo as it references "
+                              tr("You may not view or edit this Return as it references "
                                  "a Site for which you have not been granted privileges.")) ;
         return false;
       }

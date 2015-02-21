@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -13,6 +13,7 @@
 
 #include "guiclient.h"
 #include "xwidget.h"
+#include "applock.h"
 
 #include <parameter.h>
 
@@ -60,8 +61,9 @@ public slots:
     virtual void sViewWo();
     virtual void sEditSo();
     virtual void sEditWo();
-	virtual void sPopulateMenu( QMenu * pMenu, QTreeWidgetItem * pSelected );
-	virtual void sHandleShipTo();
+  	virtual void sPopulateMenu( QMenu * pMenu, QTreeWidgetItem * pSelected );
+	  virtual void sHandleShipTo();
+	  virtual void sHandleShipToName();
     virtual void sReleaseNumber();
 
 protected slots:
@@ -85,8 +87,9 @@ private:
     int _poheadid;
     QList<int> _pridList;
     int _mode;
+    AppLock           _lock;
     bool _printed;
-    PoitemTableModel* _qeitem;
+    PoitemTableModel *_qeitem;
     int _NumberGen;
     int _projectId;
 };

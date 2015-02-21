@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -84,6 +84,7 @@ configureSO::configureSO(QWidget* parent, const char* name, bool /*modal*/, Qt::
   _hideSOMiscChrg->setChecked(_metrics->boolean("HideSOMiscCharge"));
   _enableSOShipping->setChecked(_metrics->boolean("EnableSOShipping"));
   _printSO->setChecked(_metrics->boolean("DefaultPrintSOOnSave"));
+  _lineItemsSO->setChecked(_metrics->boolean("DefaultSOLineItemsTab"));
   _enablePromiseDate->setChecked(_metrics->boolean("UsePromiseDate"));
   _calcFreight->setChecked(_metrics->boolean("CalculateFreight"));
   _includePkgWeight->setChecked(_metrics->boolean("IncludePackageWeight"));
@@ -137,6 +138,8 @@ configureSO::configureSO(QWidget* parent, const char* name, bool /*modal*/, Qt::
     _enableReturns->setChecked(false);
     _enableReservations->hide();
     _enableReservations->setChecked(false);
+    _requireReservations->hide();
+    _requireReservations->setChecked(false);
     _locationGroup->hide();
     _locationGroup->setChecked(false);
     _lowest->setChecked(false);
@@ -208,6 +211,7 @@ configureSO::configureSO(QWidget* parent, const char* name, bool /*modal*/, Qt::
     _printRA->setChecked(_metrics->boolean("DefaultPrintRAOnSave"));
 
     _enableReservations->setChecked(_metrics->boolean("EnableSOReservations"));
+    _requireReservations->setChecked(_metrics->boolean("RequireSOReservations"));
 
     _locationGroup->setChecked(_metrics->boolean("EnableSOReservationsByLocation"));
     _manualReservations->setChecked(_metrics->boolean("SOManualReservations"));
@@ -283,11 +287,13 @@ bool configureSO::sSave()
   _metrics->set("DefaultBackOrders", _backorders->isChecked());
   _metrics->set("DefaultFreeFormShiptos", _freeFormShiptos->isChecked());
   _metrics->set("DefaultPrintSOOnSave", _printSO->isChecked());
+  _metrics->set("DefaultSOLineItemsTab", _lineItemsSO->isChecked());
   _metrics->set("UsePromiseDate", _enablePromiseDate->isChecked());
   _metrics->set("CalculateFreight", _calcFreight->isChecked());
   _metrics->set("IncludePackageWeight", _includePkgWeight->isChecked());
   _metrics->set("EnableReturnAuth", _enableReturns->isChecked());
   _metrics->set("EnableSOReservations", _enableReservations->isChecked());
+  _metrics->set("RequireSOReservations", _requireReservations->isChecked());
   _metrics->set("ItemPricingPrecedence", _itemPricingPrecedence->isChecked());
   _metrics->set("WholesalePriceCosting", _wholesalePriceCosting->isChecked());
   _metrics->set("Long30Markups", _long30Markups->isChecked());

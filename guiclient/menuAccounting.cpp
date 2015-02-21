@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -132,6 +132,7 @@
 #include "vendors.h"
 #include "bankAccounts.h"
 #include "checkFormats.h"
+#include "assessFinanceCharges.h"
 
 #include "customers.h"
 
@@ -239,17 +240,17 @@ menuAccounting::menuAccounting(GUIClient *Pparent) :
 
     // Accounting | Accaunts Payable |  Payments
     { "menu", tr("&Payments"), (char*)apPaymentsMenu, apMenu, "true", NULL, NULL, true, NULL },
-    { "ap.selectPayments", tr("&Select..."), SLOT(sSelectPayments()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , tr("Select Payments") },
-    { "ap.listSelectPayments", tr("&List Selected..."), SLOT(sSelectedPayments()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , NULL },
+    { "ap.selectPayments", tr("&Approve..."), SLOT(sSelectPayments()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , tr("Approve Payments") },
+    { "ap.listSelectPayments", tr("&List Approved..."), SLOT(sSelectedPayments()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , NULL },
     { "separator", NULL, NULL, apPaymentsMenu, "true", NULL, NULL, true, NULL },
-    { "ap.prepareCheckRun", tr("&Prepare Check Run..."), SLOT(sPrepareCheckRun()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , NULL },
-    { "ap.createMiscCheck", tr("Create &Miscellaneous Check..."), SLOT(sCreateMiscCheck()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , NULL },
-    { "ap.viewCheckRun", tr("Vie&w Check Run..."), SLOT(sViewCheckRun()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , NULL },
+    { "ap.prepareCheckRun", tr("&Prepare Payment Run..."), SLOT(sPrepareCheckRun()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , NULL },
+    { "ap.createMiscCheck", tr("Create &Miscellaneous Payment..."), SLOT(sCreateMiscCheck()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , NULL },
+    { "ap.viewCheckRun", tr("Vie&w Payment Run..."), SLOT(sViewCheckRun()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , NULL },
     { "separator", NULL, NULL, apPaymentsMenu, "true", NULL, NULL, true, NULL },
-    { "ap.voidCheckRun", tr("&Void Check Run..."), SLOT(sVoidCheckRun()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , NULL },
+    { "ap.voidCheckRun", tr("&Void Payment Run..."), SLOT(sVoidCheckRun()), apPaymentsMenu, "MaintainPayments", NULL, NULL, true , NULL },
     { "separator", NULL, NULL, apPaymentsMenu, "true", NULL, NULL, true, NULL },
-    { "ap.postCheck", tr("Post &Check..."), SLOT(sPostCheck()), apPaymentsMenu, "PostPayments", NULL, NULL, true , NULL },
-    { "ap.postChecks", tr("P&ost Checks..."), SLOT(sPostChecks()), apPaymentsMenu, "PostPayments", NULL, NULL, true , NULL },
+    { "ap.postCheck", tr("Post &Payment..."), SLOT(sPostCheck()), apPaymentsMenu, "PostPayments", NULL, NULL, true , NULL },
+    { "ap.postChecks", tr("P&ost Payments..."), SLOT(sPostChecks()), apPaymentsMenu, "PostPayments", NULL, NULL, true , NULL },
                        
     { "separator", NULL, NULL, apMenu, "true", NULL, NULL, true, NULL },
     { "ap.workbench", tr("&Workbench..."), SLOT(sApWorkBench()), apMenu, "MaintainPayments MaintainAPMemos", QPixmap(":/images/viewCheckRun.png"), toolBar, true, tr("Payables Workbench") },
@@ -259,8 +260,8 @@ menuAccounting::menuAccounting(GUIClient *Pparent) :
     { "menu", tr("&Forms"), (char*)apFormsMenu, apMenu, "true", NULL, NULL, true, NULL },
     { "ap.printPurchaseOrder", tr("Print Purchase &Order..."), SLOT(sPrintPurchaseOrder()), apFormsMenu, "PrintPurchaseOrders", NULL, NULL, true , NULL },
     { "separator", NULL, NULL, apFormsMenu, "true", NULL, NULL, true, NULL },
-    { "ap.printCheck", tr("Print &Check..."), SLOT(sPrintCheck()), apFormsMenu, "MaintainPayments", NULL, NULL, true , NULL },
-    { "ap.printCheckRun", tr("Print Check &Run..."), SLOT(sPrintCheckRun()), apFormsMenu, "MaintainPayments", NULL, NULL, true , NULL },
+    { "ap.printCheck", tr("Print &Payment..."), SLOT(sPrintCheck()), apFormsMenu, "MaintainPayments", NULL, NULL, true , NULL },
+    { "ap.printCheckRun", tr("Print Payment &Run..."), SLOT(sPrintCheckRun()), apFormsMenu, "MaintainPayments", NULL, NULL, true , NULL },
     
     // Accounting | Accaunts Payable |  Reports
     { "menu", tr("&Reports"), (char*)apReportsMenu, apMenu, "true", NULL, NULL, true, NULL },
@@ -269,7 +270,7 @@ menuAccounting::menuAccounting(GUIClient *Pparent) :
     { "ap.dspOpenAPItemsByVendor", tr("Open &Payables..."), SLOT(sDspAPOpenItemsByVendor()), apReportsMenu, "ViewAPOpenItems", NULL, NULL, true , NULL },
     { "ap.dspAPAging", tr("&Aging..."), SLOT(sDspTimePhasedOpenAPItems()), apReportsMenu, "ViewAPOpenItems", QPixmap(":/images/apAging.png"), toolBar, true , tr("Payables Aging") },
     { "separator", NULL, NULL, apReportsMenu, "true", NULL, NULL, true, NULL },
-    { "ap.dspCheckRegister", tr("&Check Register..."), SLOT(sDspCheckRegister()), apReportsMenu, "MaintainPayments", NULL, NULL, true , NULL },
+    { "ap.dspCheckRegister", tr("&Payment Register..."), SLOT(sDspCheckRegister()), apReportsMenu, "MaintainPayments", NULL, NULL, true , NULL },
     { "ap.dspVoucherRegister", tr("&Voucher Register..."), SLOT(sDspVoucherRegister()), apReportsMenu, "MaintainVouchers ViewVouchers", NULL, NULL, true , NULL },
     { "separator", NULL, NULL, apReportsMenu, "true", NULL, NULL, true, NULL },
     { "ap.dspAPApplications", tr("&Applications..."), SLOT(sDspAPApplications()), apReportsMenu, "ViewAPOpenItems", NULL, NULL, true , NULL },
@@ -289,6 +290,7 @@ menuAccounting::menuAccounting(GUIClient *Pparent) :
     { "ar.listUnpostedInvoices", tr("&List Unposted..."), SLOT(sUnpostedInvoices()), arInvoicesMenu, "SelectBilling", QPixmap(":/images/unpostedInvoices.png"), toolBar, true , tr("List Unposted Invoices") },
     { "separator", NULL, NULL, arInvoicesMenu, "true", NULL, NULL, true, NULL },
     { "ar.postInvoices", tr("&Post..."), SLOT(sPostInvoices()), arInvoicesMenu, "PostMiscInvoices", NULL, NULL, true , NULL },
+    { "ar.assessFinanceCharges", tr("&Assess Finance Charges..."), SLOT(sAssessFinanceCharges()), arInvoicesMenu, "PostMiscInvoices", NULL, NULL, true , NULL },
 
     // Accounting | Accounts Receivable | Memos
     { "menu", tr("&Memos"), (char*)arMemosMenu,	arMenu, "true",	 NULL, NULL, true, NULL },
@@ -397,7 +399,7 @@ menuAccounting::menuAccounting(GUIClient *Pparent) :
     { "gl.accountingPeriods",	tr("Accounting &Periods..."),	SLOT(sAccountingPeriods()),	calendarMenu,	"MaintainAccountingPeriods",	NULL, NULL, true, NULL },
     
     // Accounting | Account
-    { "menu", tr("&Account"), (char*)coaMenu, mainMenu,	"true",	NULL, NULL, true, NULL },
+    { "menu", tr("&Ledger Accounts"), (char*)coaMenu, mainMenu,	"true",	NULL, NULL, true, NULL },
     { "gl.accountNumbers",	tr("&Chart of Accounts..."),	SLOT(sAccountNumbers()), coaMenu,	"MaintainChartOfAccounts",	NULL, NULL, true, NULL },
     { "gl.companies",		tr("C&ompanies..."),		SLOT(sCompanies()),		coaMenu,	"MaintainChartOfAccounts", NULL, NULL, (_metrics->value("GLCompanySize").toInt() > 0), NULL },
     { "gl.profitCenterNumber",	tr("&Profit Center Numbers..."),	SLOT(sProfitCenters()),	coaMenu,	"MaintainChartOfAccounts", NULL, NULL, (_metrics->value("GLProfitSize").toInt() > 0), NULL },
@@ -986,8 +988,10 @@ void menuAccounting::sAccountingYearPeriods()
 void menuAccounting::sReconcileBankaccount()
 {
 //  omfgThis->handleNewWindow(new reconcileBankaccount());
-  reconcileBankaccount *newdlg = new reconcileBankaccount();
-  omfgThis->handleNewWindow(newdlg, Qt::ApplicationModal);
+// Open Application Modal
+//  reconcileBankaccount *newdlg = new reconcileBankaccount();
+//  omfgThis->handleNewWindow(newdlg, Qt::ApplicationModal);
+  reconcileBankaccount::openReconcileBankaccount(-1);
 }
 
 void menuAccounting::sEnterAdjustment()
@@ -1118,6 +1122,10 @@ void menuAccounting::sSyncCompanies()
   omfgThis->handleNewWindow(new syncCompanies());
 }
 
+void menuAccounting::sAssessFinanceCharges()
+{
+  omfgThis->handleNewWindow(new assessFinanceCharges());
+}
 
 void menuAccounting::sSetup()
 {

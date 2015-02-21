@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -181,8 +181,6 @@ customer::customer(QWidget* parent, const char* name, Qt::WFlags fl)
   _charfilled = false;
   _mode       = -1;
 
-  _sellingWarehouse->setId(-1);
-
   _currency->setLabel(_currencyLit);
 
   _balanceMethod->append(0, tr("Balance Forward"), "B");
@@ -228,6 +226,8 @@ customer::customer(QWidget* parent, const char* name, Qt::WFlags fl)
     _sellingWarehouseLit->hide();
     _sellingWarehouse->hide();
   }
+  else
+    _sellingWarehouse->setId(_preferences->value("PreferredWarehouse").toInt());
 
   if(!_metrics->boolean("AutoCreditWarnLateCustomers"))
     _warnLate->hide();
@@ -528,7 +528,8 @@ bool customer::sSave()
                "       cust_blanketpos=:cust_blanketpos, cust_comments=:cust_comments,"
                "       cust_preferred_warehous_id=:cust_preferred_warehous_id, "
                "       cust_gracedays=:cust_gracedays,"
-               "       cust_curr_id=:cust_curr_id "
+               "       cust_curr_id=:cust_curr_id,"
+               "       cust_financecharge=:cust_financecharge "
                "WHERE (cust_id=:cust_id);" );
   }
   else
@@ -547,7 +548,7 @@ bool customer::sSave()
                "  cust_discntprcnt, cust_taxzone_id, "
                "  cust_active, cust_usespos, cust_blanketpos, cust_comments,"
                "  cust_preferred_warehous_id, "
-               "  cust_gracedays, cust_curr_id ) "
+               "  cust_gracedays, cust_curr_id, cust_financecharge ) "
                "VALUES "
                "( :cust_id, :cust_number,"
                "  :cust_salesrep_id, :cust_name,"
@@ -563,7 +564,7 @@ bool customer::sSave()
                "  :cust_discntprcnt, :cust_taxzone_id,"
                "  :cust_active, :cust_usespos, :cust_blanketpos, :cust_comments,"
                "  :cust_preferred_warehous_id, "
-               "  :cust_gracedays, :cust_curr_id ) " );
+               "  :cust_gracedays, :cust_curr_id, :cust_financecharge ) " );
 
   customerSave.bindValue(":cust_id", _custid);
   customerSave.bindValue(":cust_number", _number->number().trimmed());
@@ -619,6 +620,11 @@ bool customer::sSave()
   if(_warnLate->isChecked())
     customerSave.bindValue(":cust_gracedays", _graceDays->value());
 
+  if(_exemptFinanceCharge->isChecked())
+    customerSave.bindValue(":cust_financecharge", false);
+  else
+    customerSave.bindValue(":cust_financecharge", true);
+    
   customerSave.exec();
   if (ErrorReporter::error(QtCriticalMsg, this, tr("Error Saving"),
                            customerSave, __FILE__, __LINE__))
@@ -733,7 +739,7 @@ void customer::sCheck()
     {
       if (QMessageBox::critical(this, tr("Invalid Number"),
                                 tr("<p>This number is currently "
-                                   "assigned to another CRM account.")))
+                                   "assigned to another Account.")))
       {
         _number->setNumber(_cachedNumber);
         _number->setFocus();
@@ -795,8 +801,8 @@ void customer::sCheck()
     else if ((customerCheck.value("type").toInt() == 3) && (_notice))
     {
       if (QMessageBox::question(this, tr("Convert"),
-                  tr("<p>This number is currently assigned to CRM Account. "
-                     "Do you want to convert the CRM Account to a Customer?"),
+                  tr("<p>This number is currently assigned to Account. "
+                     "Do you want to convert the Account to a Customer?"),
               QMessageBox::Yes,
               QMessageBox::No | QMessageBox::Default) == QMessageBox::No)
       {
@@ -851,7 +857,7 @@ void customer::sCrmAccount()
     params.append("mode", "edit");
   else
   {
-    qWarning("tried to open CRM Account window without privilege");
+    qWarning("tried to open Account window without privilege");
     return;
   }
 
@@ -1190,6 +1196,7 @@ void customer::populate()
   cust.prepare( "SELECT custinfo.*, "
                 "       cust_commprcnt, cust_discntprcnt,"
                 "       (cust_gracedays IS NOT NULL) AS hasGraceDays,"
+                "       COALESCE(cust_financecharge, TRUE) AS financecharge,"
                 "       crmacct_id, crmacct_owner_username "
                 "FROM custinfo LEFT OUTER JOIN "
                 "     crmacct ON (cust_id=crmacct_cust_id) "
@@ -1253,6 +1260,8 @@ void customer::populate()
     _shipform->setId(cust.value("cust_shipform_id").toInt());
     _shipchrg->setId(cust.value("cust_shipchrg_id").toInt());
     _shipvia->setText(cust.value("cust_shipvia").toString());
+    if (!cust.value("financecharge").toBool())
+      _exemptFinanceCharge->setChecked(true);
 
     _sellingWarehouse->setId(cust.value("cust_preferred_warehous_id").toInt());
 
@@ -1275,11 +1284,11 @@ void customer::populate()
       _onCreditWarning->setChecked(TRUE);
     else
       _onCreditHold->setChecked(TRUE);
-
+    
     _comments->setId(_crmacctid);
     _documents->setId(_crmacctid);
 
-    _todoList->parameterWidget()->setDefault(tr("CRM Account"), _crmacctid, true);
+    _todoList->parameterWidget()->setDefault(tr("Account"), _crmacctid, true);
     _contacts->setCrmacctid(_crmacctid);
 
     _quotes->parameterWidget()->setDefault(tr("Customer"), _custid, true);
@@ -1554,7 +1563,7 @@ void customer::sLoadCrmAcct(int crmacctId)
     _billCntct->setId(getq.value("crmacct_cntct_id_1").toInt());
     _corrCntct->setId(getq.value("crmacct_cntct_id_1").toInt());
   }
-  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Getting CRM Account"),
+  else if (ErrorReporter::error(QtCriticalMsg, this, tr("Getting Account"),
                            getq, __FILE__, __LINE__))
     return;
 
@@ -1693,6 +1702,7 @@ void customer::sClear()
 
     _salesrep->setId(_metrics->value("DefaultSalesRep").toInt());
     _terms->setId(_metrics->value("DefaultTerms").toInt());
+    _exemptFinanceCharge->setChecked(false);
     _taxzone->setCurrentIndex(-1);
     _shipform->setId(_metrics->value("DefaultShipFormId").toInt());
     _shipvia->setId(_metrics->value("DefaultShipViaId").toInt());
@@ -1714,7 +1724,8 @@ void customer::sClear()
 
     _defaultCommissionPrcnt->setDouble(0);
     _shipchrg->setId(-1);
-    _sellingWarehouse->setId(-1);
+    if (_metrics->boolean("MultiWhs"))
+      _sellingWarehouse->setId(_preferences->value("PreferredWarehouse").toInt());
     _active->setChecked(true);
     _allowFFBillto->setChecked(false);
     _usesPOs->setChecked(false);
@@ -1728,7 +1739,7 @@ void customer::sClear()
     _charass->clear();
     _widgetStack->setCurrentIndex(0);
 
-    _todoList->parameterWidget()->setDefault(tr("CRM Account"), -1, true);
+    _todoList->parameterWidget()->setDefault(tr("Account"), -1, true);
     _contacts->setCrmacctid(_crmacctid);
 
     _quotes->parameterWidget()->setDefault(tr("Customer"), -1, true);

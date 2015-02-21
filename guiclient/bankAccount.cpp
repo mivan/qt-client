@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -18,7 +18,6 @@
 bankAccount::bankAccount(QWidget* parent, const char* name, bool modal, Qt::WFlags fl)
     : XDialog(parent, name, modal, fl)
 {
-  XSqlQuery bankbankAccount;
   setupUi(this);
 
   connect(_bankName,SIGNAL(textChanged(QString)), this, SLOT(sNameChanged(QString)));
@@ -47,13 +46,17 @@ bankAccount::bankAccount(QWidget* parent, const char* name, bool modal, Qt::WFla
 
   if (_metrics->boolean("ACHSupported") && _metrics->boolean("ACHEnabled"))
   {
-    bankbankAccount.prepare("SELECT fetchMetricText('ACHCompanyName') AS name,"
-              "       formatACHCompanyId() AS number;");
+    XSqlQuery bankbankAccount;
+    bankbankAccount.prepare("SELECT fetchMetricText('ACHCompanyName') AS name, "
+                                   "fetchMetricText('ACHCompanyId') AS number;" );
     bankbankAccount.exec();
     if (bankbankAccount.first())
     {
       _useCompanyIdOrigin->setText(bankbankAccount.value("name").toString());
-      _defaultOrigin->setText(bankbankAccount.value("number").toString());
+
+      QString defaultOriginValue = bankbankAccount.value("number").toString();
+      defaultOriginValue.remove("-");
+      _defaultOrigin->setText(defaultOriginValue);
     }
     else if (bankbankAccount.lastError().type() != QSqlError::NoError)
       systemError(this, bankbankAccount.lastError().databaseText(), __FILE__, __LINE__);
@@ -162,7 +165,7 @@ void bankAccount::sSave()
     QWidget    *widget;
   } error[] = {
     { !_assetAccount->isValid(), 
-      tr("<p>Select an G/L Account for this Bank Account before saving it."),
+      tr("<p>Select an Ledger Account for this Bank Account before saving it."),
       _assetAccount
     },
     { _transmitGroup->isChecked() && ! _routing->hasAcceptableInput(),

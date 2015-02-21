@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -23,7 +23,6 @@ reschedulePoitem::reschedulePoitem(QWidget* parent, const char* name, bool modal
   connect(_po, SIGNAL(valid(bool)), _poitem, SLOT(setEnabled(bool)));
   connect(_po, SIGNAL(newId(int, QString)), this, SLOT(sPopulatePoitem(int)));
   connect(_poitem, SIGNAL(newID(int)), this, SLOT(sPopulate(int)));
-  connect(_poitem, SIGNAL(valid(bool)), _reschedule, SLOT(setEnabled(bool)));
 }
 
 reschedulePoitem::~reschedulePoitem()
@@ -96,6 +95,7 @@ void reschedulePoitem::sPopulatePoitem(int pPoheadid)
   reschedulePopulatePoitem.bindValue(":pohead_id", pPoheadid);
   reschedulePopulatePoitem.exec();
   _poitem->populate(reschedulePopulatePoitem);
+  sPopulate(_poitem->id());
 }
 
 void reschedulePoitem::sPopulate(int pPoitemid)
@@ -105,6 +105,7 @@ void reschedulePoitem::sPopulate(int pPoitemid)
   {
     _current->clear();
     _new->clear();
+    _reschedule->setEnabled(false);
   }
   else
   {
@@ -116,6 +117,7 @@ void reschedulePoitem::sPopulate(int pPoitemid)
     if (reschedulePopulate.first())
     {
       _current->setDate(reschedulePopulate.value("poitem_duedate").toDate());
+      _reschedule->setEnabled(true);
     }
   }
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -369,8 +369,8 @@ bool userPreferences::save()
 
   if (_newpassword->text().length() == 0)
   {
-    QMessageBox::warning( this, tr("Cannot save User"),
-                          tr( "You must enter a valid Password before you can save this User." ));
+    QMessageBox::warning( this, tr("Cannot save User Account"),
+                          tr( "You must enter a valid Password before you can save this User Account." ));
     _newpassword->setFocus();
     return false;
   }
@@ -381,7 +381,7 @@ bool userPreferences::save()
   // TODO: have to compare this against something usefull
   if(currentpasswd != __password)
   {
-    QMessageBox::warning( this, tr("Cannot save User"),
+    QMessageBox::warning( this, tr("Cannot save User Account"),
                   tr( "Please Verify Current Password." ));
     _currentpassword->setFocus();
     return false;
@@ -420,7 +420,7 @@ bool userPreferences::save()
 
           if(isCloud || isXtuple)
           {
-            salt = "private";
+            salt = "j3H44uadEI#8#kSmkh#H%JSLAKDOHImklhdfsn3#432?%^kjasdjla3uy989apa3uipoweurw-03235##+=-lhkhdNOHA?%@mxncvbwoiwerNKLJHwe278NH28shNeGc";
           }
           else
           {

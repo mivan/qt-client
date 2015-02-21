@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -49,10 +49,7 @@ bomItem::bomItem(QWidget* parent, const char* name, bool modal, Qt::WFlags fl)
   connect(_deleteCost, SIGNAL(clicked()), this, SLOT(sDeleteCost()));
   connect(_char, SIGNAL(activated(int)), this, SLOT(sCharIdChanged()));
 
-  if (_metrics->boolean("AllowInactiveBomItems"))
-    _item->setType(ItemLineEdit::cGeneralComponents);
-  else
-    _item->setType(ItemLineEdit::cGeneralComponents | ItemLineEdit::cActive);
+  _item->setType(ItemLineEdit::cGeneralComponents);
 
   _dates->setStartNull(tr("Always"), omfgThis->startOfTime(), TRUE);
   _dates->setStartCaption(tr("Effective"));
@@ -85,6 +82,7 @@ bomItem::bomItem(QWidget* parent, const char* name, bool modal, Qt::WFlags fl)
   }
 
   _parentitemid=0;
+  _bomheadid=0;
   _saved=FALSE;
   adjustSize();
 }
@@ -113,6 +111,10 @@ enum SetResponse bomItem::set(const ParameterList &pParams)
     populate();
   }
 
+  param = pParams.value("bomhead_id", &valid);
+  if (valid)
+    _bomheadid = param.toInt();
+  
   param = pParams.value("item_id", &valid);
   if (valid)
     _parentitemid = param.toInt();
@@ -127,6 +129,9 @@ enum SetResponse bomItem::set(const ParameterList &pParams)
     if (param.toString() == "new")
     {
       _mode = cNew;
+
+      if (!_metrics->boolean("AllowInactiveBomItems"))
+        _item->setType(ItemLineEdit::cGeneralComponents | ItemLineEdit::cActive);
 
       QString issueMethod = _metrics->value("DefaultWomatlIssueMethod");
       for (int counter = 0; counter < _issueMethod->count(); counter++)

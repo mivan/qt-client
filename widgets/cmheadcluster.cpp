@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -19,5 +19,5 @@ CmheadCluster::CmheadCluster(QWidget* pParent, const char* pName) :
 CmheadClusterLineEdit::CmheadClusterLineEdit(QWidget* pParent, const char* pName) :
     VirtualClusterLineEdit(pParent, "cmhead", "cmhead_id", "cmhead_number", "cmhead_invcnumber", 0, 0, pName)
 {
-    setTitles(tr("Credit Memo"), tr("Credit Memos"));
+    setTitles(tr("Return"), tr("Returns"));
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -478,6 +478,7 @@ void Documents::refresh()
               " WHEN (target_type='FILE') THEN :file "
               " WHEN (target_type='IMG') THEN :image "
               " WHEN (target_type='INCDT') THEN :incident "
+              " WHEN (target_type='INV') THEN :invoice "
               " WHEN (target_type='I') THEN :item "
               " WHEN (target_type='OPP') THEN :opp "
               " WHEN (target_type='J') THEN :project "
@@ -509,6 +510,7 @@ void Documents::refresh()
 
   query.bindValue(":po", tr("Purchase Order"));
   query.bindValue(":so", tr("Sales Order"));
+  query.bindValue(":invoice", tr("Invoice"));
   query.bindValue(":quote", tr("Quote"));
   query.bindValue(":wo", tr("Work Order"));
   query.bindValue(":image", tr("Image"));
@@ -519,7 +521,7 @@ void Documents::refresh()
   query.bindValue(":project", tr("Project"));
   query.bindValue(":projecttask", tr("Project Task")); 
   query.bindValue(":item", tr("Item"));
-  query.bindValue(":crma", tr("CRM Account"));
+  query.bindValue(":crma", tr("Account"));
   query.bindValue(":cust", tr("Customer"));
   query.bindValue(":vendor", tr("Vendor"));
   query.bindValue(":contact", tr("Contact"));

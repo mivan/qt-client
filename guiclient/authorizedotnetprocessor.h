@@ -1,7 +1,7 @@
 /*
  * This file is part of the xTuple ERP: PostBooks Edition, a free and
  * open source Enterprise Resource Planning software suite,
- * Copyright (c) 1999-2012 by OpenMFG LLC, d/b/a xTuple.
+ * Copyright (c) 1999-2014 by OpenMFG LLC, d/b/a xTuple.
  * It is licensed to you under the Common Public Attribution License
  * version 1.0, the full text of which (including xTuple-specific Exhibits)
  * is available at www.xtuple.com/CPAL.  By using this software, you agree
@@ -25,6 +25,7 @@ class AuthorizeDotNetProcessor : public CreditCardProcessor
 
   protected:
     virtual int  buildCommon(const int pccardid, const QString &pcvv, const double pamount, const int pcurrid, QString &prequest, QString pordertype);
+    virtual int  buildFollowup(const int pccpayid, const QString &ptransid, double &pamount, int &pcurrid, QString &prequest, QString pordertype);
     virtual int  doTestConfiguration();
     virtual int  doAuthorize(const int, const QString &pcvv, double&, const double, const bool, const double, const double, const int, QString&, QString&, int&, ParameterList &);
     virtual int  doCharge(const int, const QString &pcvv, const double, const double, const bool, const double, const double, const int, QString&, QString&, int&, ParameterList &);
